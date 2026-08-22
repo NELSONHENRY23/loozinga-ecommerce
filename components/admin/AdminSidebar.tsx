@@ -11,6 +11,7 @@ import {
     PackagePlus,
     Tags,
     User,
+    Users,
 } from 'lucide-react';
 
 type AdminSidebarProps = {
@@ -24,14 +25,14 @@ const menuItems = [
         icon: LayoutDashboard,
     },
     {
-        name: "Orders",
-        href: "/admin/orders",
-        icon: ShoppingCart,
-    },
-    {
         name: "Products",
         href: "/admin/products",
         icon: Boxes,
+    },
+    {
+        name: "Add New Product",
+        href: "/admin/products/new",
+        icon: PackagePlus,
     },
     {
         name: "Categories",
@@ -39,15 +40,22 @@ const menuItems = [
         icon: Tags,
     },
     {
+        name: "Orders",
+        href: "/admin/orders",
+        icon: ShoppingCart,
+    },
+    {
+        name: "Users",
+        href: "/admin/users",
+        icon: Users,
+    },
+    {
         name: "Account",
         href: "/admin/account",
         icon: User,
     },
-    {
-        name: "Add New Product",
-        href: "/admin/products/new",
-        icon: PackagePlus,
-    },
+  
+    
 ]
 function AdminSidebar({open, onClose}: AdminSidebarProps) {
     const pathname = usePathname();

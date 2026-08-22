@@ -5,11 +5,12 @@ import { usePathname } from 'next/navigation';
 
 import {
     Boxes,
-    ClipboardList,
+    ShoppingCart,
     LayoutDashboard,
     LogOut,
     PackagePlus,
-    UserRound,
+    Tags,
+    User,
 } from 'lucide-react';
 
 type AdminSidebarProps = {
@@ -25,7 +26,7 @@ const menuItems = [
     {
         name: "Orders",
         href: "/admin/orders",
-        icon: ClipboardList,
+        icon: ShoppingCart,
     },
     {
         name: "Products",
@@ -33,9 +34,14 @@ const menuItems = [
         icon: Boxes,
     },
     {
+        name: "Categories",
+        href: "/admin/categories",
+        icon: Tags,
+    },
+    {
         name: "Account",
         href: "/admin/account",
-        icon: UserRound,
+        icon: User,
     },
     {
         name: "Add New Product",

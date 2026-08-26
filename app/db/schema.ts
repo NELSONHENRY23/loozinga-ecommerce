@@ -2,7 +2,7 @@ import {
     pgEnum,
     pgTable,
     timestamp,
-    uuid,
+    serial,
     varchar,
 } from 'drizzle-orm/pg-core';
 
@@ -13,7 +13,7 @@ export const categoryStatusEnum = pgEnum(
 );
 
 export const categories = pgTable('categories', {
-    id: uuid('id').defaultRandom().primaryKey(),
+    id: serial('id').primaryKey(),
     name: varchar('name', {length: 100}).notNull().unique(),
     status: categoryStatusEnum('status').default('Active').notNull(),
     createdAt: timestamp('created_at', {

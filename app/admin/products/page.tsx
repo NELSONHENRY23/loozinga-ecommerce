@@ -1,18 +1,27 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq } from 'drizzle-orm';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Images, Pencil, Trash2 } from 'lucide-react';
+import { Images, Pencil } from 'lucide-react';
 
 import { db } from '@/app/db';
 import { categories, productImages, products } from '@/app/db/schema';
 import DeleteProductButton from '@/components/DeleteProductButton';
+import Pagination from '@/components/admin/Pagination';
 /*
   Admin products should always use
   current database information.
  */
 export const dynamic = 'force-dynamic';
 
-export default async function ProductsPage() {
+const pageSize = 10;
+
+type ProductsPageProps = {
+  searchParams: Promise<{
+    page?: string | string[];
+  }>;
+}
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   /*
     IMPORTANT:
    Query database inside the page.
@@ -20,7 +29,27 @@ export default async function ProductsPage() {
     This makes Next.js fetch the current
     products whenever this page renders.
    */
+    
+    // Read the current page from URL
+    const params = await searchParams;
 
+    const requestedPage = Number(params.page ?? 1);
+
+    const validPage = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
+    // Count all products in the database
+    const countResult = await db.select({total: count()}).from(products);
+    const totalProducts = countResult[0]?.total ?? 0;
+
+    // Calculate the total number of pages.
+    const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
+
+    // Prevent requests eyond the last page.
+    const currentPage = Math.min(validPage, totalPages);
+
+    // calculate how many products to skip
+    const offset = (currentPage - 1) * pageSize;
+    
   const productList = await db
     .select({
       id: products.id,
@@ -46,7 +75,7 @@ export default async function ProductsPage() {
       ),
     )
 
-    .orderBy(desc(products.createdAt));
+    .orderBy(desc(products.createdAt), desc(products.id)).limit(pageSize).offset(offset);
 
   return (
     <div className="p-5">
@@ -199,39 +228,13 @@ export default async function ProductsPage() {
         </div>
       </section>
 
-      {/* Keep your pagination UI */}
-      <div className="mt-6 flex justify-center">
-        <div className="flex overflow-hidden rounded border border-gray-300 bg-white">
-          <button
-            type="button"
-            disabled
-            className="border-r border-gray-300 px-4 py-2 text-sm text-gray-400"
-          >
-            Previous
-          </button>
-
-          <button
-            type="button"
-            className="border-r border-gray-300 bg-blue-500 px-4 py-2 text-sm text-white"
-          >
-            1
-          </button>
-
-          <button
-            type="button"
-            className="border-r border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
-          >
-            2
-          </button>
-
-          <button
-            type="button"
-            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      {/* pagination UI */}
+  
+<Pagination
+  currentPage={currentPage}
+  totalPages={totalPages}
+  basePath="/admin/products"
+/>
     </div>
   );
 }

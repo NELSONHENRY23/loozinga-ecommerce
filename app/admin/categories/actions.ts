@@ -2,13 +2,13 @@
 
 
 import { db } from "@/app/db";
-import { categories } from "@/app/db/schema";
+import { categories, products } from "@/app/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const categorySchema = z.object({
-    name: z.string().trim().min(1, "Category name is required").max(255, "Category name is too long"),
+    name: z.string().trim().min(1, "Category name is required").max(100, "Category name is too long"),
     status: z.enum(["Active", "Inactive"]),
 });
 
@@ -88,10 +88,39 @@ export async function updateCategory(categoryId: number, input: CategoryInput): 
 }
 
 export async function deleteCategory(categoryId: number): Promise<ActionResult>{
+    // Validate the category ID.
+    if(!Number.isSafeInteger(categoryId) || categoryId <= 0){
+        return{
+            success: false,
+            message: "Invalid category ID."
+        }
+    }    
     try{
-        await db.delete(categories).where(eq(categories.id, categoryId));
+        // Check whether the category contains products
+        const exisitingProducts = await db.select({id: products.id}).from(products).where(eq(products.categoryId, categoryId)).limit(1);
 
+        // Prevent deletion if products exist
+        if(exisitingProducts.length > 0){
+            return {
+                success: false,
+                message: "Cannot delete this category because it contains products. Move or delete those products first."
+            }
+        }
+
+        // Delete the category.
+        const deleteCategory = await db.delete(categories).where(eq(categories.id, categoryId)).returning({id: categories.id});
+
+        // Handle nonexistent categories.
+        if(deleteCategory.length === 0){
+            return {
+                success: false,
+                message: "Category not found."
+            }
+        }
+
+        // Refresh affected pages
         revalidatePath("/admin/categories");
+        revalidatePath("/admin/products");
 
         return{
             success: true,

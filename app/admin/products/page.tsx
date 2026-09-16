@@ -49,7 +49,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
     // calculate how many products to skip
     const offset = (currentPage - 1) * pageSize;
-    
+
   const productList = await db
     .select({
       id: products.id,
@@ -228,6 +228,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         </div>
       </section>
 
+      <p className="mt-4 text-center text-sm text-gray-500">
+  Showing {productList.length} of {totalProducts} products
+  {" · "}
+  Page {currentPage} of {totalPages}
+</p>
       {/* pagination UI */}
   
 <Pagination

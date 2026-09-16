@@ -1,174 +1,67 @@
-'use client';
+import { asc, eq } from 'drizzle-orm';
+import Link from 'next/link';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { db } from '@/app/db';
+import { products, categories } from '@/app/db/schema';
+import EditProductForm from '@/components/admin/EditProductForm';
 
-export default function EditProductPage() {
-  const params = useParams();
-  const router = useRouter();
 
-  const productId = params.id;
+export default async function EditProductPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
 
-  const [formData, setFormData] = useState({
-    title: 'Sample Product',
-    description: 'Sample product description',
-    price: '99.99',
-    offer: '10',
-    category: 'clothing',
-    color: 'Black',
-  });
+  const [product] = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      description: products.description,
+      price: products.price,
+      offer: products.offer,
+      color: products.color,
+      categoryId: products.categoryId,
+    })
+    .from(products)
+    .where(eq(products.id, id))
+    .limit(1);
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) {
-    const { name, value } = e.target;
+  if (!product) {
+    return (
+      <div className="p-6">
+        <div className="rounded-lg bg-white p-6 shadow-sm">
+          <h1 className="text-xl font-semibold text-gray-800">
+            Product Not Found
+          </h1>
 
-    setFormData((previousData) => ({
-      ...previousData,
-      [name]: value,
-    }));
+          <p className="mt-2 text-sm text-gray-500">
+            The product you are trying to edit does not exist.
+          </p>
+
+          <Link
+            href="/admin/products"
+            className="mt-4 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+          >
+            Back to Products
+          </Link>
+        </div>
+      </div>
+    );
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    console.log('Product Id:', productId);
-    console.log('Updated product:', formData);
-
-    // TODO FETCH DATA
-    router.push('/admin/products');
-  }
+  const categoryList = await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+    })
+    .from(categories)
+    .orderBy(asc(categories.name));
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Edit Product</h1>
-
-        <p className="mt-1 text-sm text-gray-500">
-          Home / Products / Edit Product
-        </p>
-      </div>
-
-      <div className="rounded-lg bg-white shadow-sm">
-        <div className="border-b px-6 py-4">
-          <h2 className="font-semibold text-gray-700">Product</h2>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5 p-6">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Title
-            </label>
-
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              className="w-full rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Description
-            </label>
-
-            <input
-              type="text"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              required
-              className="w-full rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Price
-            </label>
-
-            <input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              required
-              className="w-full rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Category
-            </label>
-
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-              className="w-full rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="clothing">Clothing</option>
-              <option value="accessories">Accessories</option>
-              <option value="footwear">Footwear</option>
-              <option value="specials">Specials</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Color
-            </label>
-
-            <input
-              type="text"
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-              required
-              className="w-full rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Special Offer / Sale %
-            </label>
-
-            <input
-              type="number"
-              name="offer"
-              value={formData.offer}
-              onChange={handleChange}
-              min="0"
-              max="100"
-              required
-              className="w-full rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Update Product
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="rounded-md border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <EditProductForm
+      product={product}
+      categories={categoryList}
+    />
   );
 }

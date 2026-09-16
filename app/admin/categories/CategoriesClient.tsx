@@ -165,9 +165,9 @@ export default function CategoriesClient({
 
             <tbody className="divide-y divide-gray-100">
               {categoryList.length > 0 ? (
-                categoryList.map((category) => (
+                categoryList.map((category, index) => (
                   <tr key={category.id} className="transition hover:bg-gray-50">
-                    <td className="px-5 py-4 text-gray-500">#{category.id}</td>
+                    <td className="px-5 py-4 text-gray-500">#{index + 1}</td>
 
                     <td className="px-5 py-4 font-medium text-gray-700">
                       {category.name}

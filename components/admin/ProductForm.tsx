@@ -1,14 +1,27 @@
 'use client';
 
-import { ChangeEvent, FormEvent, useState } from 'react';
-import { ImagePlus, Save, X } from 'lucide-react';
+import { ChangeEvent, FormEvent, useTransition, useState } from 'react';
+import { Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+import { createProduct } from '@/app/admin/products/actions';
+
+
+type CategoryOption = {
+  id: number;
+  name: string;
+};
+
+type ProductFormProps = {
+  categories: CategoryOption[];
+};
 
 type ProductFormData = {
   name: string;
   description: string;
   price: string;
   offer: string;
-  category: string;
+  categoryId: string;
   color: string;
 };
 
@@ -16,21 +29,20 @@ const initialFormData: ProductFormData = {
   name: '',
   description: '',
   price: '',
-  offer: '',
-  category: 'clothing',
+  offer: '0',
+  categoryId: '',
   color: '',
 };
 
-export default function ProductForm() {
+export default function ProductForm({ categories }: ProductFormProps) {
+  const router = useRouter();
+
+  const [isPending, startTransition] = useTransition();
+
+  const [error, setError] = useState('');
+
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
 
-  const [images, setImages] = useState<(File | null)[]>([
-    null,
-    null,
-    null,
-    null,
-    null,
-  ]);
 
   function handleChange(
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -43,39 +55,35 @@ export default function ProductForm() {
     }));
   }
 
-  function handleImageChange(
-    index: number,
-    event: ChangeEvent<HTMLInputElement>,
-  ) {
-    const file = event.target.files?.[0] ?? null;
-
-    setImages((previous: (File | null)[]) => {
-      const updatedImages = [...previous];
-      updatedImages[index] = file;
-
-      return updatedImages;
-    });
-  }
-
-  function removeImage(index: number) {
-    setImages((previous: (File | null)[]) => {
-      const updatedImages = [...previous];
-      updatedImages[index] = null;
-      return updatedImages;
-    });
-  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    console.log('Product information: ', formData);
-    console.log('Product images: ', images);
+    setError('');
 
-    alert('Form is working! We will connect it to database later.');
+    startTransition(async () => {
+      // create the database for product first
+      const result = await createProduct({
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        price: Number(formData.price),
+        offer: formData.offer === '' ? 0 : Number(formData.offer),
+        categoryId: Number(formData.categoryId),
+        color: formData.color.trim(),
+      });
 
-    // Clear the form after submission
-    setFormData(initialFormData);
-    setImages([null, null, null, null, null]);
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+
+      // At this point PostgreSql has generated the UUID
+      const productId = result.productId;
+
+        // route to edit product images
+        router.push(`/admin/products/${productId}/images`);
+      
+    });
   }
 
   return (
@@ -171,34 +179,7 @@ export default function ProductForm() {
                 </div>
               </FormField>
             </div>
-          </section>
-
-          {/* Images */}
-          <section className="bg-white shadow-sm">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <h2 className="text-lg font-semibold text-gray-700">
-                Product Images
-              </h2>
-
-              <p className="mt-1 text-sm text-gray-400">
-                Add a main image and up to four additional product images
-              </p>
-            </div>
-
-            <div className="p-6">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {images.map((image, index) => (
-                  <ImageUpload
-                    key={index}
-                    index={index}
-                    image={image}
-                    onChange={handleImageChange}
-                    onRemove={removeImage}
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
+          </section>   
         </div>
 
         {/* Right side */}
@@ -213,16 +194,19 @@ export default function ProductForm() {
             <div className="space-y-5 p-6">
               <FormField label="Category" required>
                 <select
-                  name="category"
-                  value={formData.category}
+                  name="categoryId"
+                  value={formData.categoryId}
                   onChange={handleChange}
                   required
+                  disabled={categories.length === 0}
                   className="form-input"
                 >
-                  <option value="clothing">clothing</option>
-                  <option value="accessories">Accessories</option>
-                  <option value="footwear">Footwear</option>
-                  <option value="specials">Specials</option>
+                  <option value="">Select category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </FormField>
 
@@ -240,19 +224,18 @@ export default function ProductForm() {
             </div>
           </section>
 
+          {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
+
           {/* Save panel */}
           <section className="bg-white p-6 shadow-sm">
             <button
               type="submit"
+              disabled={isPending}
               className="flex w-full items-center justify-center gap-2 rounded bg-blue-500 font-medium text-white transition hover:bg-blue-600"
             >
               <Save size={18} />
-              Create Product
+              {isPending ? 'Creating...' : 'Create Product'}
             </button>
-
-            <p className="mt-3 text-center text-xs text-gray-400">
-              Database saving will be added later
-            </p>
           </section>
         </div>
       </div>
@@ -284,59 +267,3 @@ function FormField({
   );
 }
 
-/*
-    Image upload box
-*/
-
-function ImageUpload({
-  index,
-  image,
-  onChange,
-  onRemove,
-}: {
-  index: number;
-  image: File | null;
-  onChange: (index: number, event: ChangeEvent<HTMLInputElement>) => void;
-  onRemove: (index: number) => void;
-}) {
-  const label = index === 0 ? 'Main Image' : `Image ${index}`;
-
-  return (
-    <div>
-      <p className="mb-2 text-sm font-medium text-gray-600">{label}</p>
-      {!image ? (
-        <label className="flex h-36 cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed border-gray-300 bg-gray-50 text-gray-400 transition hover:border-blue-400 hover:bg-blue-50">
-          <ImagePlus size={28} />
-
-          <span className="mt-2 text-sm">Choose image</span>
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(event) => onChange(index, event)}
-            className="hidden"
-          />
-        </label>
-      ) : (
-        <div className="flex h-36 flex-col items-center justify-center rounded border border-gray-200 bg-gray-50 p-3">
-          <p className="max-w-full truncate text-sm font-medium text-gray-700">
-            {image.name}
-          </p>
-
-          <p className="mt-1 text-xs text-gray-400">
-            {(image.size / 1024).toFixed(1)} KB
-          </p>
-
-          <button
-            type="button"
-            onClick={() => onRemove(index)}
-            className="mt-4 flex items-center gap-1 text-sm text-red-500 hover:text-red-600"
-          >
-            <X size={15} />
-            Remove
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}

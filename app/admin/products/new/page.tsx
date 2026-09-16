@@ -1,9 +1,17 @@
 import Link from 'next/link';
+import { asc, eq } from "drizzle-orm";
 import { ChevronRight } from 'lucide-react';
+
+import { db } from "@/app/db";
+import { categories } from "@/app/db/schema";
 
 import ProductForm from '@/components/admin/ProductForm';
 
-export default function page() {
+export default async function page() {
+  const categoryList = await db.select({
+    id: categories.id,
+    name: categories.name,
+  }).from(categories).where(eq(categories.status, "Active")).orderBy(asc(categories.name));
   return (
     <div className="p-5">
       {/* Heading */}
@@ -26,7 +34,7 @@ export default function page() {
         </div>
       </div>
 
-      <ProductForm />
+      <ProductForm categories={categoryList}/>
     </div>
   );
 }

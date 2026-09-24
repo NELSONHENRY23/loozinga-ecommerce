@@ -6,7 +6,7 @@ import CategoriesClient from './CategoriesClient';
 
 export const dynamic = 'force-dynamic';
 
-const pageSize = 2;
+const pageSize = 10;
 
 type CategoriesPageProps = {
   searchParams: Promise<{ page?: string | string[] }>;

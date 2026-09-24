@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const categorySchema = z.object({
-    name: z.string().trim().min(1, "Category name is required").max(100, "Category name is too long"),
+    name: z.string().trim().min(1, "Category name is required").max(100, "Category name must not exceed 100 characters"),
     status: z.enum(["Active", "Inactive"]),
 });
 
@@ -53,6 +53,13 @@ export async function createCategory(input: CategoryInput): Promise<ActionResult
 }
 
 export async function updateCategory(categoryId: number, input: CategoryInput): Promise<ActionResult>{
+   if(!Number.isSafeInteger(categoryId) || categoryId <= 0){
+    return{
+        success: false,
+        message: "Invalid category ID.",
+    }
+   }
+
     const result = categorySchema.safeParse(input);
 
     if(!result.success){
@@ -65,12 +72,20 @@ export async function updateCategory(categoryId: number, input: CategoryInput): 
     }
 
     try {
-        await db.update(categories).set({
+       const updatedCategory = await db.update(categories).set({
             name: result.data.name,
             status: result.data.status,
-        }).where(eq(categories.id, categoryId));
+            updatedAt: new Date(),
+        }).where(eq(categories.id, categoryId)).returning({id: categories.id});
 
+        if(updatedCategory.length === 0){
+            return {
+                success: false,
+                message: "Category not found."
+            }
+        }
         revalidatePath("/admin/categories");
+        revalidatePath("/admin/products");
 
         return{
             success: true,
@@ -107,7 +122,7 @@ export async function deleteCategory(categoryId: number): Promise<ActionResult>{
             }
         }
 
-        // Delete the category.
+        // Delete the empty category.
         const deleteCategory = await db.delete(categories).where(eq(categories.id, categoryId)).returning({id: categories.id});
 
         // Handle nonexistent categories.
@@ -120,7 +135,7 @@ export async function deleteCategory(categoryId: number): Promise<ActionResult>{
 
         // Refresh affected pages
         revalidatePath("/admin/categories");
-        revalidatePath("/admin/products");
+        
 
         return{
             success: true,

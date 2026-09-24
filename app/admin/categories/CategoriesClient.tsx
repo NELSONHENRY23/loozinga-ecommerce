@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 
 import { createCategory, updateCategory, deleteCategory } from './actions';
+import Pagination from "@/components/admin/Pagination";
 
 type Category = {
   id: number;
@@ -15,10 +16,18 @@ type Category = {
 
 type CategoryClientProps = {
   categoryList: Category[];
-};
+  currentPage: number;
+  totalPages: number;
+  totalCategories: number;
+  startIndex: number;
+}
 
 export default function CategoriesClient({
   categoryList,
+  currentPage,
+  totalPages,
+  totalCategories,
+  startIndex,
 }: CategoryClientProps) {
   const router = useRouter();
 
@@ -167,7 +176,7 @@ export default function CategoriesClient({
               {categoryList.length > 0 ? (
                 categoryList.map((category, index) => (
                   <tr key={category.id} className="transition hover:bg-gray-50">
-                    <td className="px-5 py-4 text-gray-500">#{index + 1}</td>
+                    <td className="px-5 py-4 text-gray-500">#{startIndex + index + 1}</td>
 
                     <td className="px-5 py-4 font-medium text-gray-700">
                       {category.name}
@@ -201,7 +210,8 @@ export default function CategoriesClient({
                         <button
                           type="button"
                           onClick={() => handleDelete(category.id)}
-                          className="rounded-md p-2 text-red-500 transiton hover:bg-red-50"
+                          disabled={isPending}
+                          className="rounded-md p-2 text-red-500 transition hover:bg-red-50"
                           title="Delete category"
                         >
                           <Trash2 size={17} />
@@ -224,6 +234,22 @@ export default function CategoriesClient({
           </table>
         </div>
       </section>
+
+      <div className="mt-4">
+        <p className="text-center text-sm text-gray-500">
+          Showing {categoryList.length} of {" "}
+          {totalCategories} categories
+          {" · "}
+          Page {currentPage} of {totalPages}
+        </p>
+
+        <Pagination
+         currentPage={currentPage}
+         totalPages={totalPages}
+         basePath="/admin/categories"
+        />
+
+      </div>
 
       {isModalOpen && (
         // Modal goes here
@@ -268,6 +294,7 @@ export default function CategoriesClient({
                   onChange={(e) => setCategoryName(e.target.value)}
                   value={categoryName}
                   placeholder="Enter category name"
+                  maxLength={100}
                   required
                   autoFocus
                   className="w-full border border-gray-200 p-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-400"

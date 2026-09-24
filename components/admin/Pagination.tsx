@@ -7,7 +7,8 @@ type PaginationProps = {
 }
 
 export default function Pagination({currentPage, totalPages, basePath,}: PaginationProps){
-    if (totalPages <= 1 ) return null;
+    
+    if (totalPages <= 1 ) return null; // if you want pagination to always be visible, remove this line
 
     const page = Math.min(Math.max(currentPage, 1), totalPages);
 

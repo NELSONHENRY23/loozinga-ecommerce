@@ -13,6 +13,7 @@ import { db } from '@/app/db';
 import { orderItems, orders } from '@/app/db/schema';
 
 import OrderStatusForm from '@/components/admin/OrderStatus';
+import PaymentStatusForm from '@/components/admin/PaymentStatusForm';
 
 type OrderDetailsPageProps = {
   params: Promise<{
@@ -196,6 +197,12 @@ export default async function OrderDetailsPage({
               </span>
             </div>
           </div>
+
+          <PaymentStatusForm
+            orderId={order.id}
+            currentStatus={order.paymentStatus}
+          />
+          
         </section>
       </div>
 

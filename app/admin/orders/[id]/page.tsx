@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { eq } from 'drizzle-orm';
 import {
   ArrowLeft,
   User,
@@ -8,7 +9,10 @@ import {
   Package,
 } from 'lucide-react';
 
-import { orders } from '@/data/orders';
+import { db } from '@/app/db';
+import { orderItems, orders } from '@/app/db/schema';
+
+import OrderStatusForm from '@/components/admin/OrderStatus';
 
 type OrderDetailsPageProps = {
   params: Promise<{
@@ -21,11 +25,25 @@ export default async function OrderDetailsPage({
 }: OrderDetailsPageProps) {
   const { id } = await params;
 
-  const order = orders.find((order) => order.id === id);
+  // Get the order 
+  const orderResult = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+
+  const order = orderResult[0];
 
   if (!order) {
     notFound();
   }
+
+  // Get all items belonging to this order
+  const items = await db.select({
+    id: orderItems.id,
+    productId: orderItems.productId,
+    productName: orderItems.productName,
+    quantity: orderItems.quantity,
+    price: orderItems.price,
+  })
+  .from(orderItems)
+  .where(eq(orderItems.orderId, order.id));
 
   return (
     <div className="p-5">
@@ -51,7 +69,7 @@ export default async function OrderDetailsPage({
 
           <span>/</span>
 
-          <span>{order.id}</span>
+          <span>{order.orderNumber}</span>
         </div>
       </div>
 
@@ -71,11 +89,15 @@ export default async function OrderDetailsPage({
             <p className="text-sm text-gray-400">Order</p>
 
             <h2 className="text-xl font-semibold text-gray-700">
-              {order.id}
+              {order.orderNumber}
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              Placed on {order.date}
+              Placed on {' '} {order.createdAt.toLocaleDateString('en-US', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
             </p>
           </div>
 
@@ -93,6 +115,12 @@ export default async function OrderDetailsPage({
             {order.orderStatus}
           </span>
         </div>
+
+        <div className='w-full max-w-xs'>
+
+          <OrderStatusForm orderId={order.id} currentStatus={order.orderStatus} />
+
+        </div>
       </section>
 
       {/* Customer / Address / Payment */}
@@ -109,7 +137,7 @@ export default async function OrderDetailsPage({
 
           <div className="space-y-2 text-sm">
             <p className="font-medium text-gray-700">
-              {order.customer}
+              {order.customerName}
             </p>
 
             <p className="text-gray-500">{order.email}</p>
@@ -129,9 +157,9 @@ export default async function OrderDetailsPage({
           </div>
 
           <div className="space-y-1 text-sm text-gray-500">
-            <p>{order.address.street}</p>
-            <p>{order.address.city}</p>
-            <p>{order.address.country}</p>
+            <p>{order.street}</p>
+            <p>{order.city}</p>
+            <p>{order.country}</p>
           </div>
         </section>
 
@@ -195,14 +223,29 @@ export default async function OrderDetailsPage({
             </thead>
 
             <tbody className="divide-y divide-gray-100">
-              {order.items.map((item) => (
+              {
+              items.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-5 py-8 text-center text-gray-400"
+                  >
+                    No order items found.
+                  </td>
+                </tr>
+              ) : (
+              items.map((item) => {
+                const price = Number(item.price)
+                const subtotal = price * item.quantity;
+
+                return (
                 <tr key={item.id}>
                   <td className="px-5 py-4 font-medium text-gray-700">
-                    {item.name}
+                    {item.productName}
                   </td>
 
                   <td className="px-5 py-4 text-gray-500">
-                    ${item.price.toFixed(2)}
+                    ${price.toFixed(2)}
                   </td>
 
                   <td className="px-5 py-4 text-gray-500">
@@ -210,10 +253,11 @@ export default async function OrderDetailsPage({
                   </td>
 
                   <td className="px-5 py-4 text-right font-medium text-gray-700">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    ${subtotal.toFixed(2)}
                   </td>
                 </tr>
-              ))}
+                )
+}))}
             </tbody>
           </table>
         </div>
@@ -227,7 +271,7 @@ export default async function OrderDetailsPage({
               </span>
 
               <span className="text-lg font-semibold text-gray-700">
-                ${order.total.toFixed(2)}
+                ${Number(order.total).toFixed(2)}
               </span>
             </div>
           </div>

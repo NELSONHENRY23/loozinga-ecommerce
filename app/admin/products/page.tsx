@@ -7,10 +7,12 @@ import { db } from '@/app/db';
 import { categories, productImages, products } from '@/app/db/schema';
 import DeleteProductButton from '@/components/DeleteProductButton';
 import Pagination from '@/components/admin/Pagination';
+
 /*
   Admin products should always use
   current database information.
  */
+
 export const dynamic = 'force-dynamic';
 
 const pageSize = 10;
@@ -44,7 +46,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     // Calculate the total number of pages.
     const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
 
-    // Prevent requests eyond the last page.
+    // Prevent requests beyond the last page.
     const currentPage = Math.min(validPage, totalPages);
 
     // calculate how many products to skip
@@ -233,7 +235,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   {" · "}
   Page {currentPage} of {totalPages}
 </p>
-      {/* pagination UI */}
+      {/* Pagination UI */}
   
 <Pagination
   currentPage={currentPage}

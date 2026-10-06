@@ -14,6 +14,8 @@ import {
     Users,
 } from 'lucide-react';
 
+import { logout } from '@/app/admin/logout/actions';
+
 type AdminSidebarProps = {
     open: boolean;
     onClose: () => void;
@@ -99,10 +101,14 @@ function AdminSidebar({open, onClose}: AdminSidebarProps) {
                     )
                 })
             }
-            <button className='flex w-full items-center gap-3 px-5 py-3 text-sm text-gray-300 transition hover:bg-[#2e3b46] hover:text-white'>
+
+<form action={logout}>
+
+            <button type='submit' className='flex w-full items-center gap-3 px-5 py-3 text-sm text-gray-300 transition hover:bg-[#2e3b46] hover:text-white'>
                 <LogOut size={18}/>
                 <span>Log Out</span>
             </button>
+</form>
         </nav>
     </aside>
     </>

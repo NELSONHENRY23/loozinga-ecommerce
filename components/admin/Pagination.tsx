@@ -4,9 +4,10 @@ type PaginationProps = {
     currentPage: number;
     totalPages: number;
     basePath: string;
+    queryParams?: Record<string, string>;
 }
 
-export default function Pagination({currentPage, totalPages, basePath,}: PaginationProps){
+export default function Pagination({currentPage, totalPages, basePath, queryParams = {}}: PaginationProps){
     
     if (totalPages <= 1 ) return null; // if you want pagination to always be visible, remove this line
 
@@ -18,6 +19,19 @@ export default function Pagination({currentPage, totalPages, basePath,}: Paginat
 
     const activeStyle = "bg-blue-600 text-white hover:bg-blue-600";
 
+    function buildPageUrl(pageNumber: number){
+        const params = new URLSearchParams();
+
+        for (const [key, value] of Object.entries(queryParams)){
+            if(value){
+                params.set(key, value);
+            }
+        }
+
+        params.set("page", String(pageNumber));
+
+        return `${basePath}?${params.toString()}`;
+    }
     return(
         <nav
             aria-label="Pagination"
@@ -27,7 +41,7 @@ export default function Pagination({currentPage, totalPages, basePath,}: Paginat
             {
                 page > 1 ? (
                     <Link 
-                        href={`${basePath}?page=${page - 1}`}
+                        href={buildPageUrl(page - 1)}
                         className={linkStyle}
                     >
                     Previous</Link>
@@ -49,7 +63,7 @@ export default function Pagination({currentPage, totalPages, basePath,}: Paginat
                             index > 0 && number - pageNumbers[index - 1] > 1 && (<span>...</span>)
                         }
                         <Link
-                           href={`${basePath}?page=${number}`}
+                           href={buildPageUrl(number)}
                            aria-current={page === number ? "page" : undefined}
                            className={`${linkStyle} ${page === number ? activeStyle : ""}`}
                         >
@@ -63,7 +77,7 @@ export default function Pagination({currentPage, totalPages, basePath,}: Paginat
             {
                 page < totalPages ? (
                     <Link 
-                        href={`${basePath}?page=${page + 1}`}
+                        href={buildPageUrl(page + 1)}
                         className={linkStyle}
                     >
                         Next

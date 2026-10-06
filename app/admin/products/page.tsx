@@ -21,9 +21,11 @@ type ProductsPageProps = {
   searchParams: Promise<{
     page?: string | string[];
   }>;
-}
+};
 
-export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+export default async function ProductsPage({
+  searchParams,
+}: ProductsPageProps) {
   /*
     IMPORTANT:
    Query database inside the page.
@@ -31,26 +33,29 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     This makes Next.js fetch the current
     products whenever this page renders.
    */
-    
-    // Read the current page from URL
-    const params = await searchParams;
 
-    const requestedPage = Number(params.page ?? 1);
+  // Read the current page from URL
+  const params = await searchParams;
 
-    const validPage = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const requestedPage = Number(params.page ?? 1);
 
-    // Count all products in the database
-    const countResult = await db.select({total: count()}).from(products);
-    const totalProducts = countResult[0]?.total ?? 0;
+  const validPage =
+    Number.isSafeInteger(requestedPage) && requestedPage > 0
+      ? requestedPage
+      : 1;
 
-    // Calculate the total number of pages.
-    const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
+  // Count all products in the database
+  const countResult = await db.select({ total: count() }).from(products);
+  const totalProducts = countResult[0]?.total ?? 0;
 
-    // Prevent requests beyond the last page.
-    const currentPage = Math.min(validPage, totalPages);
+  // Calculate the total number of pages.
+  const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
 
-    // calculate how many products to skip
-    const offset = (currentPage - 1) * pageSize;
+  // Prevent requests beyond the last page.
+  const currentPage = Math.min(validPage, totalPages);
+
+  // calculate how many products to skip
+  const offset = (currentPage - 1) * pageSize;
 
   const productList = await db
     .select({
@@ -77,7 +82,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       ),
     )
 
-    .orderBy(desc(products.createdAt), desc(products.id)).limit(pageSize).offset(offset);
+    .orderBy(desc(products.createdAt), desc(products.id))
+    .limit(pageSize)
+    .offset(offset);
 
   return (
     <div className="p-5">
@@ -231,17 +238,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       </section>
 
       <p className="mt-4 text-center text-sm text-gray-500">
-  Showing {productList.length} of {totalProducts} products
-  {" · "}
-  Page {currentPage} of {totalPages}
-</p>
+        Showing {productList.length} of {totalProducts} products
+        {' · '}
+        Page {currentPage} of {totalPages}
+      </p>
       {/* Pagination UI */}
-  
-<Pagination
-  currentPage={currentPage}
-  totalPages={totalPages}
-  basePath="/admin/products"
-/>
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        basePath="/admin/products"
+      />
     </div>
   );
 }

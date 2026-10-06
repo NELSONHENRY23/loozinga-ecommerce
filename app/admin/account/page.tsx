@@ -7,7 +7,12 @@ import {
   Phone,
 } from 'lucide-react';
 
-export default function AccountPage() {
+import { createClient } from '@/utils/superbase/server';
+
+export default async function AccountPage() {
+    const supabase = await createClient();
+
+    const {data: { user}, } = await supabase.auth.getUser();
   return (
     <div className="p-5">
       {/* Heading */}
@@ -40,11 +45,11 @@ export default function AccountPage() {
 
           <div>
             <h2 className="text-lg font-semibold text-gray-700">
-              Nelson Henry
+              Admin User
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              Administrator
+              {user?.email ?? 'No email available'}
             </p>
 
             <div className="mt-2 flex items-center gap-2 text-xs text-green-600">
@@ -78,7 +83,7 @@ export default function AccountPage() {
 
               <input
                 type="text"
-                defaultValue="Nelson Henry"
+                defaultValue="Admin User"
                 className="w-full rounded-md border border-gray-200 px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-400"
               />
             </div>
@@ -97,7 +102,7 @@ export default function AccountPage() {
 
                 <input
                   type="email"
-                  defaultValue="nelson@example.com"
+                  defaultValue={user?.email ?? ''}
                   readOnly
                   className="w-full rounded-md border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm text-gray-500 outline-none"
                 />
@@ -122,7 +127,8 @@ export default function AccountPage() {
 
                 <input
                   type="text"
-                  defaultValue="+60123456789"
+                  defaultValue=""
+                  placeholder='Add phone number'
                   className="w-full rounded-md border border-gray-200 py-2.5 pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-blue-400"
                 />
               </div>

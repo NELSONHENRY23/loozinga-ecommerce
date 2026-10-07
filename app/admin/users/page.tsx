@@ -1,28 +1,85 @@
-'use client'
-
-import { useState } from "react";
 import Link from "next/link";
 import { Eye, Search } from "lucide-react";
+import { eq, sql } from 'drizzle-orm';
 
-import { users } from '@/data/users';
+import { db } from "@/app/db";
+import { orders, profiles  } from "@/app/db/schema";
+import { createAdminClient } from "@/utils/superbase/admin";
 
-export default function UsersPage(){
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('All');
+type UsersPageProps = {
+  searchParams: Promise<{search?: string;}>;
+};
 
-    const filteredUsers = users.filter((user) => {
-        const matchesSearch = 
-            user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        
-            const matchesStatus = statusFilter === 'All' || user.status === statusFilter;
+export default async function UsersPage({searchParams}: UsersPageProps){
+  const params = await searchParams;
 
-            return matchesSearch && matchesStatus;
-    });
+  const search = typeof params.search === 'string' ? params.search.trim().toLowerCase() : '';
 
-    return(
-        <div className="p-5">
-               {/* Page heading */}
+  const supabaseAdmin = createAdminClient();
+
+  
+  const {
+    data: authData,
+    error,
+  } = await supabaseAdmin.auth.admin.listUsers();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  const authUsers = authData.users;
+
+  const profileList = await db
+    .select()
+    .from(profiles);
+
+  const orderStats = await db
+    .select({
+      email: orders.email,
+      totalOrders: sql<number>`count(*)`,
+      totalSpent: sql<number>`coalesce(sum(${orders.total}), 0)`,
+    })
+    .from(orders)
+    .groupBy(orders.email);
+
+  const users = authUsers.map((authUser) => {
+    const profile = profileList.find(
+      (profile) => profile.id === authUser.id,
+    );
+
+    const stats = orderStats.find(
+      (stat) =>
+        stat.email.toLowerCase() ===
+        authUser.email?.toLowerCase(),
+    );
+
+    return {
+      id: authUser.id,
+      name: profile?.name ?? 'User',
+      email: authUser.email ?? '',
+      phone: profile?.phone ?? '',
+      role: profile?.role ?? 'User',
+      joinedDate: authUser.created_at,
+      totalOrders: Number(stats?.totalOrders ?? 0),
+      totalSpent: Number(stats?.totalSpent ?? 0),
+      status:
+        authUser.banned_until
+          ? 'Blocked'
+          : 'Active',
+    };
+  });
+
+  const filteredUsers = users.filter((user) => {
+    if (!search) return true;
+
+    return (
+      user.name.toLowerCase().includes(search) ||
+      user.email.toLowerCase().includes(search)
+    );
+  });
+  return (
+    <div className="p-5">
+      {/* Heading */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-700">
           Users
@@ -41,17 +98,14 @@ export default function UsersPage(){
           <span>Users</span>
         </div>
       </div>
-      
-      {/* Users panel */}
+
       <section className="overflow-hidden rounded-md bg-white shadow-sm">
-        {/* Panel heading + filters */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
           <h2 className="font-semibold text-gray-700">
             User List
           </h2>
 
-          <div className="flex flex-wrap gap-3">
-            {/* Search */}
+          <form method="GET">
             <div className="relative">
               <Search
                 size={17}
@@ -60,49 +114,25 @@ export default function UsersPage(){
 
               <input
                 type="text"
-                value={searchTerm}
-                onChange={(e) =>
-                  setSearchTerm(e.target.value)
-                }
+                name="search"
+                defaultValue={search}
                 placeholder="Search users..."
                 className="w-64 rounded-md border border-gray-200 py-2 pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-blue-400"
               />
             </div>
-
-            {/* Status filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value)
-              }
-              className="rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-600 outline-none transition focus:border-blue-400"
-            >
-              <option value="All">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Blocked">Blocked</option>
-            </select>
-          </div>
+          </form>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
                 <th className="px-5 py-3">User</th>
                 <th className="px-5 py-3">Phone</th>
-                <th className="px-5 py-3">
-                  Joined
-                </th>
-                <th className="px-5 py-3">
-                  Orders
-                </th>
-                <th className="px-5 py-3">
-                  Total Spent
-                </th>
-                <th className="px-5 py-3">
-                  Status
-                </th>
+                <th className="px-5 py-3">Joined</th>
+                <th className="px-5 py-3">Orders</th>
+                <th className="px-5 py-3">Total Spent</th>
+                <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3 text-center">
                   Action
                 </th>
@@ -116,7 +146,6 @@ export default function UsersPage(){
                     key={user.id}
                     className="transition hover:bg-gray-50"
                   >
-                    {/* User */}
                     <td className="px-5 py-4">
                       <p className="font-medium text-gray-700">
                         {user.name}
@@ -127,27 +156,28 @@ export default function UsersPage(){
                       </p>
                     </td>
 
-                    {/* Phone */}
                     <td className="px-5 py-4 text-gray-500">
-                      {user.phone}
+                      {user.phone || '-'}
                     </td>
 
-                    {/* Joined */}
                     <td className="px-5 py-4 text-gray-500">
-                      {user.joinedDate}
+                      {new Date(
+                        user.joinedDate,
+                      ).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
                     </td>
 
-                    {/* Orders */}
                     <td className="px-5 py-4 text-gray-500">
                       {user.totalOrders}
                     </td>
 
-                    {/* Total spent */}
                     <td className="px-5 py-4 font-medium text-gray-700">
                       ${user.totalSpent.toFixed(2)}
                     </td>
 
-                    {/* Status */}
                     <td className="px-5 py-4">
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -160,7 +190,6 @@ export default function UsersPage(){
                       </span>
                     </td>
 
-                    {/* Action */}
                     <td className="px-5 py-4">
                       <div className="flex justify-center">
                         <Link
@@ -188,7 +217,6 @@ export default function UsersPage(){
           </table>
         </div>
       </section>
-        </div>
-    )
-
+    </div>
+  );
 }

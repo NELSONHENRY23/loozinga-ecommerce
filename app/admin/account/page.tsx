@@ -11,6 +11,7 @@ import { profiles } from '@/app/db/schema';
 
 import { createClient } from '@/utils/superbase/server';
 import ProfileForm from '@/components/admin/ProfileForm';
+import PasswordForm from '@/components/admin/PasswordForm';
 
 export default async function AccountPage() {
     const supabase = await createClient();
@@ -149,62 +150,11 @@ const role =
                   <p className="text-sm font-medium text-gray-700">
                     Password Management
                   </p>
-
-                  <p className="mt-1 text-xs leading-5 text-gray-500">
-                    Password updates will be connected to
-                    Supabase Authentication in the next step.
-                  </p>
                 </div>
               </div>
             </div>
 
-            <form className="space-y-5">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">
-                  Current Password
-                </label>
-
-                <input
-                  type="password"
-                  disabled
-                  className="w-full cursor-not-allowed rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-400"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">
-                  New Password
-                </label>
-
-                <input
-                  type="password"
-                  disabled
-                  className="w-full cursor-not-allowed rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-400"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-600">
-                  Confirm New Password
-                </label>
-
-                <input
-                  type="password"
-                  disabled
-                  className="w-full cursor-not-allowed rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-400"
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  disabled
-                  className="cursor-not-allowed rounded-md bg-gray-300 px-5 py-2.5 text-sm font-medium text-white"
-                >
-                  Update Password
-                </button>
-              </div>
-            </form>
+            <PasswordForm/>
           </div>
         </section>
       </div>

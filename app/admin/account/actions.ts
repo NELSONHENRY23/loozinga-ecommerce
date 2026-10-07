@@ -1,11 +1,12 @@
 'use server';
 
-import { eq } from 'drizzle-orm';
+
 import { revalidatePath } from 'next/cache';
 
 import { db } from '@/app/db';
 import { profiles } from '@/app/db/schema';
 import { createClient } from '@/utils/superbase/server';
+
 
 export async function updateProfile(formData: FormData) {
   const name = String(formData.get('name') ?? '').trim();
@@ -64,5 +65,65 @@ export async function updateProfile(formData: FormData) {
       success: false,
       message: 'Failed to update profile.',
     };
+  }
+}
+
+export async function updatePassword(formData: FormData) {
+  const newPassword = String(formData.get('newPassword') ?? '');
+
+  const confirmPassword = String(formData.get('confirmPassword') ?? '');
+
+  if(!newPassword || !confirmPassword){
+    return {
+      success: false,
+      message: 'Both password fields are required.'
+    }
+  }
+
+  if(newPassword.length < 8){
+    return{
+      success: false,
+      message: 'Password must be at least 8 charaters.',
+    }
+  }
+
+  if(newPassword !== confirmPassword){
+    return {success: false,
+    message: 'Password do not match'
+    }
+  }
+
+  const supabase = await createClient();
+
+  const {data: { user }, error: userError, } = await supabase.auth.getUser();
+
+  if(userError || !user){
+    return {
+      success: false,
+      message: 'You must be logged in'
+      }
+  }
+
+  const { error }= await supabase.auth.updateUser({password: newPassword,});
+
+  if(error){
+    console.error('UPDATE PASSWORD ERROR:', error);
+
+    if (error.code === 'same_password') {
+      return {
+        success: false,
+        message: 'New password must be different from your current password.',
+      };
+    }
+    
+    return {
+      success: false,
+      message: 'Failed to update password.'
+    }
+  }
+
+  return{
+    success: true,
+    message: 'Password updated successfully.'
   }
 }

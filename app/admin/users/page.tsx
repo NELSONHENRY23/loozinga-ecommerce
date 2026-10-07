@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Eye, Search } from "lucide-react";
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 import { db } from "@/app/db";
 import { orders, profiles  } from "@/app/db/schema";

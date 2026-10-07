@@ -115,3 +115,39 @@ export type NewOrderItem = typeof orderItems.$inferInsert;
 export type OrderStatus = Order['orderStatus'];
 export type PaymentStatus = Order['paymentStatus'];
 export type PaymentMethod = Order['paymentMethod'];
+
+// profile schema
+export const profiles = pgTable('profiles', {
+    id: uuid('id').primaryKey(),
+  
+    name: varchar('name', {
+      length: 150,
+    }).notNull(),
+  
+    phone: varchar('phone', {
+      length: 50,
+    }),
+  
+    role: varchar('role', {
+      length: 50,
+    })
+      .default('Administrator')
+      .notNull(),
+  
+    avatarUrl: text('avatar_url'),
+  
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  });
+  
+  export type Profile = typeof profiles.$inferSelect;
+  export type NewProfile = typeof profiles.$inferInsert;

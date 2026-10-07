@@ -15,6 +15,13 @@
       "when": 1791194925470,
       "tag": "0001_special_lyja",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791302183811,
+      "tag": "0002_typical_black_queen",
+      "breakpoints": true
     }
   ]
 }

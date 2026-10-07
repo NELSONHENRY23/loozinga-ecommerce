@@ -3,17 +3,59 @@ import {
   User,
   Lock,
   ShieldCheck,
-  Mail,
-  Phone,
 } from 'lucide-react';
+import { eq } from 'drizzle-orm';
+
+import { db } from '@/app/db';
+import { profiles } from '@/app/db/schema';
 
 import { createClient } from '@/utils/superbase/server';
+import ProfileForm from '@/components/admin/ProfileForm';
 
 export default async function AccountPage() {
     const supabase = await createClient();
 
-    const {data: { user}, } = await supabase.auth.getUser();
-  return (
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) {
+  return null;
+}
+
+const profileResult = await db
+  .select()
+  .from(profiles)
+  .where(eq(profiles.id, user.id))
+  .limit(1);
+
+let profile = profileResult[0];
+
+if(!profile){
+  const insertedProfile = await db.insert(profiles).values(
+    {
+      id: user.id,
+      name: 'Admin User',
+      phone: null,
+      role: 'Administrator',
+      updatedAt: new Date(),
+    }
+  ).returning();
+
+  profile = insertedProfile[0];
+
+}
+
+const name =
+  profile?.name ?? 'Admin User';
+
+const phone =
+  profile?.phone ?? '';
+
+const role =
+  profile?.role ?? 'Administrator';
+
+    return (
     <div className="p-5">
       {/* Heading */}
       <div className="mb-6">
@@ -45,7 +87,7 @@ export default async function AccountPage() {
 
           <div>
             <h2 className="text-lg font-semibold text-gray-700">
-              Admin User
+              {name}
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
@@ -74,89 +116,12 @@ export default async function AccountPage() {
             </h2>
           </div>
 
-          <form className="space-y-5 p-5">
-            {/* Name */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-600">
-                Name
-              </label>
-
-              <input
-                type="text"
-                defaultValue="Admin User"
-                className="w-full rounded-md border border-gray-200 px-3 py-2.5 text-sm text-gray-700 outline-none transition focus:border-blue-400"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-600">
-                Email
-              </label>
-
-              <div className="relative">
-                <Mail
-                  size={16}
-                  className="absolute left-3 top-3 text-gray-400"
-                />
-
-                <input
-                  type="email"
-                  defaultValue={user?.email ?? ''}
-                  readOnly
-                  className="w-full rounded-md border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm text-gray-500 outline-none"
-                />
-              </div>
-
-              <p className="mt-1 text-xs text-gray-400">
-                Email changes will be handled through authentication.
-              </p>
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-600">
-                Phone
-              </label>
-
-              <div className="relative">
-                <Phone
-                  size={16}
-                  className="absolute left-3 top-3 text-gray-400"
-                />
-
-                <input
-                  type="text"
-                  defaultValue=""
-                  placeholder='Add phone number'
-                  className="w-full rounded-md border border-gray-200 py-2.5 pl-9 pr-3 text-sm text-gray-700 outline-none transition focus:border-blue-400"
-                />
-              </div>
-            </div>
-
-            {/* Role */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-600">
-                Role
-              </label>
-
-              <input
-                type="text"
-                value="Administrator"
-                readOnly
-                className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-500 outline-none"
-              />
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="rounded-md bg-blue-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-600"
-              >
-                Save Changes
-              </button>
-            </div>
-          </form>
+         <ProfileForm
+            name={name}
+            email={user?.email ?? ''}
+            phone={phone}
+            role={role}
+          />
         </section>
 
         {/* Security */}

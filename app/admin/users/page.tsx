@@ -163,7 +163,7 @@ export default async function UsersPage({searchParams}: UsersPageProps){
                     <td className="px-5 py-4 text-gray-500">
                       {new Date(
                         user.joinedDate,
-                      ).toLocaleDateString('en-GB', {
+                      ).toLocaleDateString('en-US', {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric',

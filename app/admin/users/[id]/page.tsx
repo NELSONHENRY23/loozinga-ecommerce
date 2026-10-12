@@ -230,7 +230,7 @@ export default async function UserDetailsPage({
                 <p className="mt-1 text-sm text-gray-600">
                   {new Date(
                     authUser.created_at,
-                  ).toLocaleDateString('en-GB', {
+                  ).toLocaleDateString('en-US', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric',

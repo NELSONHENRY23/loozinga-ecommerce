@@ -9,7 +9,7 @@ import { uploadCloudinaryImage } from '@/utils/uploadCloudinary';
 import {
   deleteProductImage,
   saveProductImages,
-} from '@/app/admin/products/image-actions';
+} from '@/app/admin/(protected)/products/image-actions';
 
 type ExistingImage = {
   id: string;
@@ -61,11 +61,10 @@ export default function ProductImagesForm({
   product,
   existingImages,
 }: ProductImagesFormProps) {
-
   const router = useRouter();
 
   const [isPending, startTransition] = useTransition();
-  
+
   const [error, setError] = useState('');
 
   const [files, setFiles] = useState<(File | null)[]>([
@@ -77,13 +76,24 @@ export default function ProductImagesForm({
   ]);
 
   // save database / cloudinary images.
-  const[existingUrls, setExistingUrls] = useState<string[]>(
-    Array.from({length: 5}, (_, position) => existingImages.find((image) => image.position === position)?.secureUrl ?? '')
-  )
+  const [existingUrls, setExistingUrls] = useState<string[]>(
+    Array.from(
+      { length: 5 },
+      (_, position) =>
+        existingImages.find((image) => image.position === position)
+          ?.secureUrl ?? '',
+    ),
+  );
 
   // Local browser previews for files that have not been uploaded yet.
-const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','','']);
- 
+  const [selectedPreviews, setSelectedPreviews] = useState<string[]>([
+    '',
+    '',
+    '',
+    '',
+    '',
+  ]);
+
   function handleImageChange(
     event: ChangeEvent<HTMLInputElement>,
     position: number,
@@ -94,7 +104,7 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
 
     setError('');
 
-    if(!allowedImageTypes.includes(file.type)){
+    if (!allowedImageTypes.includes(file.type)) {
       setError('Only JPG, JPEG, PNG, WEBP images are allowed.');
 
       event.target.value = '';
@@ -104,8 +114,8 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
     // Revoke previous unsaved preview for this slot.
     const oldPreview = selectedPreviews[position];
 
-    if(oldPreview.startsWith('blob:')){
-      URL.revokeObjectURL(oldPreview,)
+    if (oldPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(oldPreview);
     }
 
     const previewUrl = URL.createObjectURL(file);
@@ -118,7 +128,6 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
       return updated;
     });
 
-    
     setSelectedPreviews((previous) => {
       const updated = [...previous];
 
@@ -126,7 +135,6 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
 
       return updated;
     });
-  
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -162,13 +170,12 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
         const uploaded = await Promise.all(
           selectedImages.map(async ({ file, position }) => {
             const image = await uploadCloudinaryImage(file, product.id);
-            return{
+            return {
               position,
               secureUrl: image.secureUrl,
               publicId: image.publicId,
             };
-          },
-        ),
+          }),
         );
 
         const result = await saveProductImages({
@@ -181,9 +188,7 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
           return;
         }
 
-        
         router.replace('/admin/products');
-
       } catch (error) {
         console.error(error);
 
@@ -194,7 +199,6 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
         );
       }
     });
-    
   }
 
   function handleDeleteImage(position: number) {
@@ -205,34 +209,36 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
 
       Do not delete the exisiting database image.
     */
-   if(files[position]){
-    const preview = selectedPreviews[position];
+    if (files[position]) {
+      const preview = selectedPreviews[position];
 
-    if(preview.startsWith('blob:')){
-      URL.revokeObjectURL(preview);
+      if (preview.startsWith('blob:')) {
+        URL.revokeObjectURL(preview);
+      }
+
+      setFiles((previous) => {
+        const updated = [...previous];
+
+        updated[position] = null;
+
+        return updated;
+      });
+
+      setSelectedPreviews((previous) => {
+        const updated = [...previous];
+
+        updated[position] = '';
+
+        return updated;
+      });
+
+      return;
     }
 
-    setFiles((previous) => {
-      const updated = [...previous,];
-
-      updated[position] = null;
-
-      return updated;
-    });
-
-    setSelectedPreviews((previous) => {
-      const updated = [...previous,];
-
-      updated[position] = '';
-
-      return updated;
-    });
-
-    return;
-   }
-
-   // No new file. Delete the saved image.
-   if(!existingUrls[position]){return;}
+    // No new file. Delete the saved image.
+    if (!existingUrls[position]) {
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -247,7 +253,7 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
         }
 
         setExistingUrls((previous) => {
-          const updated = [...previous,];
+          const updated = [...previous];
 
           updated[position] = '';
 
@@ -289,7 +295,8 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
         <form onSubmit={handleSubmit} className="p-6">
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {imageSlots.map(({ position, label }) => {
-              const preview = selectedPreviews[position] || existingUrls[position];
+              const preview =
+                selectedPreviews[position] || existingUrls[position];
 
               const hasNewFile = Boolean(files[position]);
 
@@ -311,9 +318,7 @@ const [selectedPreviews, setSelectedPreviews] = useState<string[]>(['','','','',
                         className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Trash2 size={15} />
-                        {
-                          hasNewFile ? 'Remove' : 'Delete'
-                        }
+                        {hasNewFile ? 'Remove' : 'Delete'}
                       </button>
                     )}
                   </div>

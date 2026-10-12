@@ -1,36 +1,27 @@
 'use client';
 
-import {
-  useState,
-  useTransition,
-} from 'react';
+import { useState, useTransition } from 'react';
 
-import { updatePassword } from '@/app/admin/account/actions';
+import { updatePassword } from '@/app/admin/(protected)/account/actions';
 
 export default function PasswordForm() {
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState<boolean | null>(null);
 
-  const [isPending, startTransition] =
-    useTransition();
+  const [isPending, startTransition] = useTransition();
 
-  function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const form = event.currentTarget;
-    
-    const formData = new FormData(
-      event.currentTarget,
-    );
+
+    const formData = new FormData(event.currentTarget);
 
     setMessage('');
     setSuccess(null);
 
     startTransition(async () => {
-      const result =
-        await updatePassword(formData);
+      const result = await updatePassword(formData);
 
       setMessage(result?.message ?? '');
       setSuccess(result?.success ?? false);
@@ -47,10 +38,7 @@ export default function PasswordForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-5"
-    >
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label
           htmlFor="newPassword"
@@ -90,13 +78,7 @@ export default function PasswordForm() {
       </div>
 
       {message && (
-        <p
-          className={`text-sm ${
-            success
-              ? 'text-green-600'
-              : 'text-red-600'
-          }`}
-        >
+        <p className={`text-sm ${success ? 'text-green-600' : 'text-red-600'}`}>
           {message}
         </p>
       )}
@@ -107,9 +89,7 @@ export default function PasswordForm() {
           disabled={isPending}
           className="rounded-md bg-blue-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isPending
-            ? 'Updating...'
-            : 'Update Password'}
+          {isPending ? 'Updating...' : 'Update Password'}
         </button>
       </div>
     </form>

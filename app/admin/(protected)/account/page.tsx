@@ -12,41 +12,21 @@ import { profiles } from '@/app/db/schema';
 import { createClient } from '@/utils/superbase/server';
 import ProfileForm from '@/components/admin/ProfileForm';
 import PasswordForm from '@/components/admin/PasswordForm';
+import { requireAdmin } from '@/utils/superbase/require-admin';
+
 
 export default async function AccountPage() {
-    const supabase = await createClient();
+  // verify that the current user is an administrator. 
+  const user = await requireAdmin();
 
-const {
-  data: { user },
-} = await supabase.auth.getUser();
-
-if (!user) {
-  return null;
-}
-
-const profileResult = await db
+// Retrieve the existing administrator profile.
+const [profile] = await db
   .select()
   .from(profiles)
   .where(eq(profiles.id, user.id))
   .limit(1);
 
-let profile = profileResult[0];
-
-if(!profile){
-  const insertedProfile = await db.insert(profiles).values(
-    {
-      id: user.id,
-      name: 'Admin User',
-      phone: null,
-      role: 'Administrator',
-      updatedAt: new Date(),
-    }
-  ).returning();
-
-  profile = insertedProfile[0];
-
-}
-
+  
 const name =
   profile?.name ?? 'Admin User';
 

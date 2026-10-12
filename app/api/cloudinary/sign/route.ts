@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { eq } from 'drizzle-orm';
 
+import { db } from '@/app/db';
+import { products } from '@/app/db/schema';
 import { cloudinary } from '@/utils/cloudinary';
+
+import { requireAdmin } from '@/utils/superbase/require-admin';
 
 const requestSchema = z.object({
   productId: z.uuid(),
@@ -10,6 +15,13 @@ const requestSchema = z.object({
 export async function POST(
   request: Request,
 ) {
+ // Protect privileged upload-signing credentials.
+
+ try{
+  await requireAdmin();
+ }catch{
+  return NextResponse.json({message: 'Unauthorized.'}, {status: 403},);
+ }
 
   // validate request body
   const body =
@@ -27,6 +39,16 @@ export async function POST(
         status: 400,
       },
     );
+  }
+
+  // Only sign uploads for exisiting products.
+  const [product] = await db.select({id: products.id})
+  .from(products)
+  .where(eq(products.id, parsed.data.productId))
+  .limit(1);
+
+  if(!product){
+    return NextResponse.json({message: 'Product not found'}, {status: 404},);
   }
 
   // Read Cloudinary configuration

@@ -1,15 +1,10 @@
 'use client';
 
-import {
-  ChangeEvent,
-  FormEvent,
-  useState,
-  useTransition,
-} from 'react';
+import { ChangeEvent, FormEvent, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, X } from 'lucide-react';
 
-import { updateProduct } from '@/app/admin/products/actions';
+import { updateProduct } from '@/app/admin/(protected)/products/actions';
 
 type Product = {
   id: string;
@@ -37,35 +32,23 @@ export default function EditProductForm({
 }: EditProductFormProps) {
   const router = useRouter();
 
-  const [isPending, startTransition] =
-    useTransition();
+  const [isPending, startTransition] = useTransition();
 
-  const [error, setError] =
-    useState('');
+  const [error, setError] = useState('');
 
-  const [formData, setFormData] =
-    useState({
-      name: product.name,
-      description:
-        product.description ?? '',
-      price: String(product.price),
-      offer: String(
-        product.offer ?? 0,
-      ),
-      color: product.color ?? '',
-      categoryId: product.categoryId
-        ? String(product.categoryId)
-        : '',
-    });
+  const [formData, setFormData] = useState({
+    name: product.name,
+    description: product.description ?? '',
+    price: String(product.price),
+    offer: String(product.offer ?? 0),
+    color: product.color ?? '',
+    categoryId: product.categoryId ? String(product.categoryId) : '',
+  });
 
   function handleChange(
-    event: ChangeEvent<
-      | HTMLInputElement
-      | HTMLSelectElement
-    >,
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) {
-    const { name, value } =
-      event.target;
+    const { name, value } = event.target;
 
     setFormData((previous) => ({
       ...previous,
@@ -73,38 +56,25 @@ export default function EditProductForm({
     }));
   }
 
-  function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError('');
 
     startTransition(async () => {
       try {
-        const result =
-          await updateProduct(
-            product.id,
-            {
-              name: formData.name,
-              description:
-                formData.description,
+        const result = await updateProduct(product.id, {
+          name: formData.name,
+          description: formData.description,
 
-              price: Number(
-                formData.price,
-              ),
+          price: Number(formData.price),
 
-              offer: Number(
-                formData.offer || 0,
-              ),
+          offer: Number(formData.offer || 0),
 
-              color: formData.color,
+          color: formData.color,
 
-              categoryId: Number(
-                formData.categoryId,
-              ),
-            },
-          );
+          categoryId: Number(formData.categoryId),
+        });
 
         if (!result.success) {
           setError(result.message);
@@ -113,18 +83,11 @@ export default function EditProductForm({
 
         // After successful update,
         // return to products page.
-        router.replace(
-          '/admin/products',
-        );
+        router.replace('/admin/products');
       } catch (error) {
-        console.error(
-          'UPDATE PRODUCT ERROR:',
-          error,
-        );
+        console.error('UPDATE PRODUCT ERROR:', error);
 
-        setError(
-          'Failed to update product.',
-        );
+        setError('Failed to update product.');
       }
     });
   }
@@ -133,9 +96,7 @@ export default function EditProductForm({
     <div className="p-6">
       {/* Page heading */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Edit Product
-        </h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Edit Product</h1>
 
         <p className="mt-1 text-sm text-gray-500">
           Home / Products / Edit Product
@@ -145,19 +106,12 @@ export default function EditProductForm({
       {/* Form card */}
       <div className="rounded-lg bg-white shadow-sm">
         <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="font-semibold text-gray-700">
-            Product Details
-          </h2>
+          <h2 className="font-semibold text-gray-700">Product Details</h2>
 
-          <p className="mt-1 text-sm text-gray-500">
-            Product ID: {product.id}
-          </p>
+          <p className="mt-1 text-sm text-gray-500">Product ID: {product.id}</p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5 p-6"
-        >
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
           {/* Product name */}
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -184,9 +138,7 @@ export default function EditProductForm({
             <input
               type="text"
               name="description"
-              value={
-                formData.description
-              }
+              value={formData.description}
               onChange={handleChange}
               required
               disabled={isPending}
@@ -221,30 +173,19 @@ export default function EditProductForm({
 
             <select
               name="categoryId"
-              value={
-                formData.categoryId
-              }
+              value={formData.categoryId}
               onChange={handleChange}
               required
               disabled={isPending}
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
             >
-              <option value="">
-                Select category
-              </option>
+              <option value="">Select category</option>
 
-              {categories.map(
-                (category) => (
-                  <option
-                    key={category.id}
-                    value={String(
-                      category.id,
-                    )}
-                  >
-                    {category.name}
-                  </option>
-                ),
-              )}
+              {categories.map((category) => (
+                <option key={category.id} value={String(category.id)}>
+                  {category.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -285,11 +226,7 @@ export default function EditProductForm({
           </div>
 
           {/* Error */}
-          {error && (
-            <p className="text-sm font-medium text-red-500">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-sm font-medium text-red-500">{error}</p>}
 
           {/* Buttons */}
           <div className="flex gap-3 border-t border-gray-200 pt-6">
@@ -300,19 +237,13 @@ export default function EditProductForm({
             >
               <Check size={17} />
 
-              {isPending
-                ? 'Updating...'
-                : 'Update Product'}
+              {isPending ? 'Updating...' : 'Update Product'}
             </button>
 
             <button
               type="button"
               disabled={isPending}
-              onClick={() =>
-                router.push(
-                  '/admin/products',
-                )
-              }
+              onClick={() => router.push('/admin/products')}
               className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <X size={17} />

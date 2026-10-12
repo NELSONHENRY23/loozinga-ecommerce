@@ -8,6 +8,8 @@ import { db } from '@/app/db';
 import { productImages } from '@/app/db/schema';
 import { cloudinary } from '@/utils/cloudinary';
 
+import { requireAdmin } from '@/utils/superbase/require-admin';
+
 const imageSchema = z.object({
   position: z.number().int().min(0).max(4),
   secureUrl: z.url(),
@@ -38,6 +40,9 @@ const deleteImageSchema = z.object({
 export async function saveProductImages(
   input: z.infer<typeof saveImagesSchema>,
 ) {
+  // verify administrator before performing any database work
+      await requireAdmin();
+  
   // Validate data first
   const parsed = saveImagesSchema.safeParse(input);
 
@@ -127,6 +132,9 @@ export async function saveProductImages(
 export async function deleteProductImage(
   input: z.infer<typeof deleteImageSchema>,
 ) {
+  // verify administrator before performing any database work
+      await requireAdmin();
+  
   const parsed = deleteImageSchema.safeParse(input);
 
   if (!parsed.success) {

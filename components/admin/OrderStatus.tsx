@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 
-import { updateOrderStatus } from '@/app/admin/orders/actions';
+import { updateOrderStatus } from '@/app/admin/(protected)/orders/actions';
 import type { OrderStatus } from '@/app/db/schema';
 
 type OrderStatusFormProps = {

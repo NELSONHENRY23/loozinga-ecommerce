@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { db } from '@/app/db';
 import { products, productImages } from '@/app/db/schema';
 import { cloudinary } from '@/utils/cloudinary';
+import { requireAdmin } from '@/utils/superbase/require-admin';
 
 const productSchema = z.object({
   name: z
@@ -69,6 +70,9 @@ type UpdateProductResult =
 export async function createProduct(
   input: ProductInput,
 ): Promise<CreateProductResult> {
+  // verify administrator before performing any database work
+      await requireAdmin();
+  
   const parsed = productSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -119,14 +123,15 @@ export async function createProduct(
   }
 }
 
-/* 
-   UPDATE PRODUCT
- */
+/*  UPDATE PRODUCT */
 
 export async function updateProduct(
   productId: string,
   input: ProductInput,
 ): Promise<UpdateProductResult> {
+  // verify administrator before performing any database work
+      await requireAdmin();
+  
   const productIdSchema = z.string().uuid();
 
   const parsedId = productIdSchema.safeParse(productId);
@@ -193,6 +198,9 @@ export async function updateProduct(
 /* DELETE PRODUCT */
 
 export async function deleteProduct(productId: string) {
+  // verify administrator before performing any database work
+      await requireAdmin();
+  
   const parsed = z.uuid().safeParse(productId);
 
   if (!parsed.success) {

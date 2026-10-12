@@ -4,8 +4,7 @@ import { ChangeEvent, FormEvent, useTransition, useState } from 'react';
 import { Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-import { createProduct } from '@/app/admin/products/actions';
-
+import { createProduct } from '@/app/admin/(protected)/products/actions';
 
 type CategoryOption = {
   id: number;
@@ -43,7 +42,6 @@ export default function ProductForm({ categories }: ProductFormProps) {
 
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
 
-
   function handleChange(
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) {
@@ -54,7 +52,6 @@ export default function ProductForm({ categories }: ProductFormProps) {
       [name]: value,
     }));
   }
-
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,9 +77,8 @@ export default function ProductForm({ categories }: ProductFormProps) {
       // At this point PostgreSql has generated the UUID
       const productId = result.productId;
 
-        // route to edit product images
-        router.push(`/admin/products/${productId}/images`);
-      
+      // route to edit product images
+      router.push(`/admin/products/${productId}/images`);
     });
   }
 
@@ -179,7 +175,7 @@ export default function ProductForm({ categories }: ProductFormProps) {
                 </div>
               </FormField>
             </div>
-          </section>   
+          </section>
         </div>
 
         {/* Right side */}
@@ -266,4 +262,3 @@ function FormField({
     </div>
   );
 }
-

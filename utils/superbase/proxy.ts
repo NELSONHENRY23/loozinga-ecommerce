@@ -68,35 +68,39 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
      * keep the auth verification immediately
      * after creating the client.
      */
+    const pathname = request.nextUrl.pathname;
+    
+    const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+
+    const isLoginRoute = pathname.startsWith('/admin/login');
+    
+    // keep supabase session verification.
     const {data, error,} = await supabase.auth.getClaims();
   
     const isAuthenticated = !error && Boolean(data?.claims);
 
-    const pathname = request.nextUrl.pathname;
-
-    const isAdminRoute = pathname.startsWith('/admin');
-
-    const isLoginRoute = pathname.startsWith('/admin/login');
-
+// Unauthorized visitors are redirected to login.
     // Not logged in:
     // block admin pages except login page.
     if(isAdminRoute && !isLoginRoute && !isAuthenticated) {
         const url = request.nextUrl.clone();
 
         url.pathname = '/admin/login';
+        url.search = '';
 
-        return NextResponse.redirect(url);
+        const response = NextResponse.redirect(url);
+
+        // Preserve any refreshed session cookies.
+        supabaseResponse.cookies.getAll().forEach((cookie) => {
+          response.cookies.set(cookie);
+        });
+
+        return response;
     }
 
-    // Already logged in:
-    // don't allow returning to login page
-    if(isLoginRoute && isAuthenticated){
-        const url = request.nextUrl.clone();
-
-        url.pathname = '/admin';
-
-        return NextResponse.redirect(url);
-    }
-
+    // Do NOT automatically redirect authenticated users
+    // away from /admin/login.
+    // The login action performs administrator role checks.
+  
     return supabaseResponse;
   }

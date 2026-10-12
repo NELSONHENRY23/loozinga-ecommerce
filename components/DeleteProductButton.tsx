@@ -1,24 +1,21 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { Trash2 } from 'lucide-react';
 
-import { deleteProduct } from "@/app/admin/products/actions";
+import { deleteProduct } from '@/app/admin/(protected)/products/actions';
 
 type Props = {
   productId: string;
   productName: string;
 };
 
-export default function DeleteProductButton({
-  productId,
-  productName,
-}: Props) {
+export default function DeleteProductButton({ productId, productName }: Props) {
   const router = useRouter();
 
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   function handleDelete() {
     const confirmed = window.confirm(
@@ -27,7 +24,7 @@ export default function DeleteProductButton({
 
     if (!confirmed) return;
 
-    setError("");
+    setError('');
 
     startTransition(async () => {
       try {
@@ -38,14 +35,14 @@ export default function DeleteProductButton({
           return;
         }
 
-        if (result.message !== "Product deleted successfully.") {
+        if (result.message !== 'Product deleted successfully.') {
           window.alert(result.message);
         }
 
         router.refresh();
       } catch (error) {
         console.error(error);
-        setError("Could not delete product.");
+        setError('Could not delete product.');
       }
     });
   }
@@ -60,14 +57,10 @@ export default function DeleteProductButton({
       >
         <Trash2 size={16} />
 
-        {isPending ? "Deleting..." : "Delete"}
+        {isPending ? 'Deleting...' : 'Delete'}
       </button>
 
-      {error && (
-        <p className="mt-1 text-xs text-red-600">
-          {error}
-        </p>
-      )}
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

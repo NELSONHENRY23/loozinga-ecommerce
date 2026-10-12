@@ -6,53 +6,51 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/app/db';
 import { profiles } from '@/app/db/schema';
 import { createClient } from '@/utils/superbase/server';
+import { requireAdmin } from '@/utils/superbase/require-admin';
+import { eq } from 'drizzle-orm';
 
+// UPDATE ADMIN PROFILE 
 
 export async function updateProfile(formData: FormData) {
+  // Authorization must happend before database writes
+  const user = await requireAdmin();
+  
   const name = String(formData.get('name') ?? '').trim();
   const phone = String(formData.get('phone') ?? '').trim();
 
-  if (!name) {
+  if (!name || name.length > 150) {
     return {
       success: false,
-      message: 'Name is required.',
+      message: 'Name must be between 1 and 150 charaters.',
     };
   }
 
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return {
+  if(phone.length > 50){
+    return{
       success: false,
-      message: 'You must be logged in.',
-    };
+      message: 'Phone number is too long.'
+    }
   }
 
   try {
-    await db
-      .insert(profiles)
-      .values({
-        id: user.id,
-        name,
-        phone: phone || null,
-        role: 'Administrator',
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: profiles.id,
-        set: {
-          name,
-          phone: phone || null,
-          updatedAt: new Date(),
-        },
-      });
+   const updated = await db.update(profiles)
+   .set({
+    name,
+    phone: phone || null,
+    updatedAt: new Date(),
+   })
+   .where(eq(profiles.id, user.id))
+   .returning({id: profiles.id});
+
+   if(updated.length === 0){
+    return{
+      success: false,
+      message: 'Administrator profile not found.',
+    }
+   }
 
     revalidatePath('/admin/account');
+    revalidatePath('/admin/users');
 
     return {
       success: true,
@@ -68,7 +66,12 @@ export async function updateProfile(formData: FormData) {
   }
 }
 
+// UPDATE ADMIN PASSWORD
+
 export async function updatePassword(formData: FormData) {
+  // Only an authorized administrator can use this action
+  await requireAdmin();
+
   const newPassword = String(formData.get('newPassword') ?? '');
 
   const confirmPassword = String(formData.get('confirmPassword') ?? '');

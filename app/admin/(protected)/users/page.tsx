@@ -126,7 +126,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
 
   const paginatedUsers = filteredUsers.slice(offset, offset + pageSize);
 
-  const start = totalPages === 0 ? 0 : offset + 1;
+  const start = totalUsers === 0 ? 0 : offset + 1;
   const end = Math.min(offset + pageSize, totalUsers);
 
   return (

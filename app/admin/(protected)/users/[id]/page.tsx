@@ -56,7 +56,7 @@ export default async function UserDetailsPage({
       totalSpent: sql<number>`coalesce(sum(${orders.total}), 0)`,
     })
     .from(orders)
-    .where(eq(orders.email, userEmail));
+    .where(eq(orders.userId, authUser.id));
 
   const orderStats = orderStatsResult[0];
 

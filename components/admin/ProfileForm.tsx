@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 
-import { updateProfile } from '@/app/admin/account/actions';
+import { updateProfile } from '@/app/admin/(protected)/account/actions';
 
 type ProfileFormProps = {
   name: string;

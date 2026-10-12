@@ -6,15 +6,20 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/app/db';
 import { orders, type OrderStatus, type PaymentStatus} from '@/app/db/schema';
 
+import { requireAdmin } from '@/utils/superbase/require-admin';
 
 const allowedOrderStatuses: OrderStatus [] = ['Processing', 'Shipped', 'Delivered', 'Cancelled'];
 
+// UPDATE ORDER STATUS
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus){
+    // verify administrator before performing any database work
+    await requireAdmin();
+
     if(!orderId){
         return {
             success: false,
-            message: 'Invalid order',
+            message: 'Invalid order Id',
         }
     }
 
@@ -26,12 +31,12 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus){
     }
 
    try {
-    const updatedOrder = await db.update(orders).set({
+    const [updatedOrder] = await db.update(orders).set({
         orderStatus: status,
         updatedAt: new Date(),
     }).where(eq(orders.id, orderId)).returning({id: orders.id});
 
-    if(updatedOrder.length === 0){
+    if(!updatedOrder){
         return {
             success: false,
             message: 'Order not found',
@@ -39,6 +44,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus){
     }
     revalidatePath('/admin/orders');
     revalidatePath('/admin/orders/[id]');
+    revalidatePath('/admin/users');
 
     return {
         success: true,
@@ -55,13 +61,18 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus){
    } 
 }
 
+// UPDATE PAYMENT STATUS
+
 export async function updatePaymentStatus(orderId: string, status: PaymentStatus){
+    // verify administrator before performing any database work
+    await requireAdmin();
+
     const allowedPaymentStatuses: PaymentStatus [] = ['Paid', 'Pending'];
 
     if(!orderId){
         return{
             success: false,
-            message: 'Invalid order',
+            message: 'Invalid order Id',
         }
     }
 
@@ -73,7 +84,7 @@ export async function updatePaymentStatus(orderId: string, status: PaymentStatus
     }
 
     try {
-        const updatedOrder = await db.update(orders).set(
+        const [updatedOrder] = await db.update(orders).set(
             {
                 paymentStatus: status,
                 updatedAt: new Date(),
@@ -82,7 +93,7 @@ export async function updatePaymentStatus(orderId: string, status: PaymentStatus
         .where(eq(orders.id, orderId))
         .returning({id: orders.id,});
 
-        if(updatedOrder.length === 0){
+        if(!updatedOrder){
             return{
                 success: false,
                 message: 'Order not found',
@@ -92,6 +103,11 @@ export async function updatePaymentStatus(orderId: string, status: PaymentStatus
         revalidatePath('/admin/orders');
         revalidatePath('/admin/orders/[id]');
         
+        return {
+            success: true,
+            message: 'Payment status updated successfully.',
+        };
+
     } catch (error) {
         console.error('UPDATE PAYMENT STATUS ERROR:', error);
 

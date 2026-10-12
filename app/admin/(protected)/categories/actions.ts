@@ -6,6 +6,7 @@ import { categories, products } from "@/app/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { requireAdmin } from "@/utils/superbase/require-admin";
 
 const categorySchema = z.object({
     name: z.string().trim().min(1, "Category name is required").max(100, "Category name must not exceed 100 characters"),
@@ -19,7 +20,11 @@ type ActionResult = {
     message: string;
 }
 
+// CREATE CATEGORY
 export async function createCategory(input: CategoryInput): Promise<ActionResult>{
+    // verify administrator before performing any database work
+    await requireAdmin();
+
     const result = categorySchema.safeParse(input);
 
     if(!result.success){
@@ -52,8 +57,12 @@ export async function createCategory(input: CategoryInput): Promise<ActionResult
 
 }
 
+// UPDATE CATEGORY
 export async function updateCategory(categoryId: number, input: CategoryInput): Promise<ActionResult>{
-   if(!Number.isSafeInteger(categoryId) || categoryId <= 0){
+    // verify administrator before performing any database work
+    await requireAdmin();
+
+    if(!Number.isSafeInteger(categoryId) || categoryId <= 0){
     return{
         success: false,
         message: "Invalid category ID.",
@@ -102,7 +111,11 @@ export async function updateCategory(categoryId: number, input: CategoryInput): 
     }
 }
 
+// DELETE CATEGORY
 export async function deleteCategory(categoryId: number): Promise<ActionResult>{
+    // verify administrator before performing any database work
+    await requireAdmin();
+
     // Validate the category ID.
     if(!Number.isSafeInteger(categoryId) || categoryId <= 0){
         return{

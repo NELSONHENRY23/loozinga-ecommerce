@@ -132,7 +132,7 @@ export const profiles = pgTable('profiles', {
     role: varchar('role', {
       length: 50,
     })
-      .default('Administrator')
+      .default('Customer')
       .notNull(),
   
     avatarUrl: text('avatar_url'),

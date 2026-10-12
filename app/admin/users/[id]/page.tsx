@@ -69,7 +69,7 @@ export default async function UserDetailsPage({
       createdAt: orders.createdAt,
     })
     .from(orders)
-    .where(eq(orders.email, userEmail))
+    .where(eq(orders.userId, authUser.id))
     .orderBy(sql`${orders.createdAt} desc`)
     .limit(5);
 

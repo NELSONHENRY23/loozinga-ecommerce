@@ -80,6 +80,7 @@ export const orderStatusEnum = pgEnum('order_status', [
 
 export const orders = pgTable('orders',{
     id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id'),
     orderNumber: text('order_number').notNull().unique(),
     customerName: text('customer_name').notNull(),
     email: text('email').notNull(),

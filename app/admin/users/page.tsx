@@ -1,57 +1,96 @@
-import Link from "next/link";
-import { Eye, Search } from "lucide-react";
+import Link from 'next/link';
+import { Eye, Search } from 'lucide-react';
 import { sql } from 'drizzle-orm';
 
-import { db } from "@/app/db";
-import { orders, profiles  } from "@/app/db/schema";
-import { createAdminClient } from "@/utils/superbase/admin";
+import { db } from '@/app/db';
+import { orders, profiles } from '@/app/db/schema';
+import { createAdminClient } from '@/utils/superbase/admin';
+import Pagination from '@/components/admin/Pagination';
+
+export const dynamic = 'force-dynamic';
+
+const pageSize = 10;
+const authBatchSize = 1000;
 
 type UsersPageProps = {
-  searchParams: Promise<{search?: string;}>;
+  searchParams: Promise<{
+    page?: string | string[];
+    search?: string | string[];
+  }>;
 };
 
-export default async function UsersPage({searchParams}: UsersPageProps){
+export default async function UsersPage({ searchParams }: UsersPageProps) {
   const params = await searchParams;
 
-  const search = typeof params.search === 'string' ? params.search.trim().toLowerCase() : '';
+  // Search Input
+  const search = typeof params.search === 'string' ? params.search.trim() : '';
 
+  const searchTerm = search.toLowerCase();
+
+  // Validate requested page
+  const requestedPage = Number(params.page ?? 1);
+
+  const validPage =
+    Number.isSafeInteger(requestedPage) && requestedPage > 0
+      ? requestedPage
+      : 1;
+
+  // Fetch all supabase Auth users in batches.
+  // Search must run before page slicing
   const supabaseAdmin = createAdminClient();
 
-  
-  const {
-    data: authData,
-    error,
-  } = await supabaseAdmin.auth.admin.listUsers();
+  type AuthUser = NonNullable<
+    Awaited<ReturnType<typeof supabaseAdmin.auth.admin.listUsers>>['data']
+  >['users'][number];
 
-  if (error) {
-    throw new Error(error.message);
+  const authUsers: AuthUser[] = [];
+  let authPage = 1;
+
+  while (true) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page: authPage,
+      perPage: authBatchSize,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const batch = data.users;
+    authUsers.push(...batch);
+
+    if (batch.length < authBatchSize) {
+      break;
+    }
+
+    authPage++;
   }
-  
-  const authUsers = authData.users;
 
-  const profileList = await db
-    .select()
-    .from(profiles);
+  // Fetch user profiles
+  const profileList = await db.select().from(profiles);
 
+  // Group order statistics by user ID
   const orderStats = await db
     .select({
-      email: orders.email,
+      userId: orders.userId,
       totalOrders: sql<number>`count(*)`,
       totalSpent: sql<number>`coalesce(sum(${orders.total}), 0)`,
     })
     .from(orders)
-    .groupBy(orders.email);
+    .groupBy(orders.userId);
 
+  // Build lookup maps for efficient matching
+  const profileMap = new Map(
+    profileList.map((profile) => [profile.id, profile]),
+  );
+
+  const statsMap = new Map(orderStats.map((stats) => [stats.userId, stats]));
+
+  // Combin Auth, Pofiles, and Orders
   const users = authUsers.map((authUser) => {
-    const profile = profileList.find(
-      (profile) => profile.id === authUser.id,
-    );
+    const profile = profileMap.get(authUser.id);
 
-    const stats = orderStats.find(
-      (stat) =>
-        stat.email.toLowerCase() ===
-        authUser.email?.toLowerCase(),
-    );
+    const stats = statsMap.get(authUser.id);
 
     return {
       id: authUser.id,
@@ -62,34 +101,42 @@ export default async function UsersPage({searchParams}: UsersPageProps){
       joinedDate: authUser.created_at,
       totalOrders: Number(stats?.totalOrders ?? 0),
       totalSpent: Number(stats?.totalSpent ?? 0),
-      status:
-        authUser.banned_until
-          ? 'Blocked'
-          : 'Active',
+      status: authUser.banned_until ? 'Blocked' : 'Active',
     };
   });
 
   const filteredUsers = users.filter((user) => {
-    if (!search) return true;
+    if (!searchTerm) return true;
 
     return (
-      user.name.toLowerCase().includes(search) ||
-      user.email.toLowerCase().includes(search)
+      user.name.toLowerCase().includes(searchTerm) ||
+      user.email.toLowerCase().includes(searchTerm)
     );
   });
+
+  // Pagination calculations
+  const totalUsers = filteredUsers.length;
+
+  const totalPages = Math.max(1, Math.ceil(totalUsers / pageSize));
+
+  // Clamp the requested page
+  const currentPage = Math.min(validPage, totalPages);
+
+  const offset = (currentPage - 1) * pageSize;
+
+  const paginatedUsers = filteredUsers.slice(offset, offset + pageSize);
+
+  const start = totalPages === 0 ? 0 : offset + 1;
+  const end = Math.min(offset + pageSize, totalUsers);
+
   return (
     <div className="p-5">
       {/* Heading */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-700">
-          Users
-        </h1>
+        <h1 className="text-2xl font-semibold text-gray-700">Users</h1>
 
         <div className="mt-2 flex gap-2 text-sm text-gray-500">
-          <Link
-            href="/admin"
-            className="transition hover:text-blue-500"
-          >
+          <Link href="/admin" className="transition hover:text-blue-500">
             Home
           </Link>
 
@@ -100,10 +147,9 @@ export default async function UsersPage({searchParams}: UsersPageProps){
       </div>
 
       <section className="overflow-hidden rounded-md bg-white shadow-sm">
+        {/* Header and Search */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
-          <h2 className="font-semibold text-gray-700">
-            User List
-          </h2>
+          <h2 className="font-semibold text-gray-700">User List</h2>
 
           <form method="GET">
             <div className="relative">
@@ -133,37 +179,26 @@ export default async function UsersPage({searchParams}: UsersPageProps){
                 <th className="px-5 py-3">Orders</th>
                 <th className="px-5 py-3">Total Spent</th>
                 <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3 text-center">
-                  Action
-                </th>
+                <th className="px-5 py-3 text-center">Action</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-gray-100">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="transition hover:bg-gray-50"
-                  >
+              {paginatedUsers.length > 0 ? (
+                paginatedUsers.map((user) => (
+                  <tr key={user.id} className="transition hover:bg-gray-50">
                     <td className="px-5 py-4">
-                      <p className="font-medium text-gray-700">
-                        {user.name}
-                      </p>
+                      <p className="font-medium text-gray-700">{user.name}</p>
 
-                      <p className="mt-1 text-xs text-gray-400">
-                        {user.email}
-                      </p>
+                      <p className="mt-1 text-xs text-gray-400">{user.email}</p>
                     </td>
 
                     <td className="px-5 py-4 text-gray-500">
                       {user.phone || '-'}
                     </td>
 
-                    <td className="px-5 py-4 text-gray-500">
-                      {new Date(
-                        user.joinedDate,
-                      ).toLocaleDateString('en-US', {
+                    <td className="whitespace-nowrap px-5 py-4 text-gray-500">
+                      {new Date(user.joinedDate).toLocaleDateString('en-US', {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric',
@@ -217,6 +252,21 @@ export default async function UsersPage({searchParams}: UsersPageProps){
           </table>
         </div>
       </section>
+
+      {/* Result Information */}
+      <p className="mt-4 text-center text-sm text-gray-500">
+        Showing {start}-{end} of {totalUsers} users
+        {' · '}
+        Page {currentPage} of {totalPages}
+      </p>
+
+      {/* Shared Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        basePath="/admin/users"
+        queryParams={{ search }}
+      />
     </div>
   );
 }

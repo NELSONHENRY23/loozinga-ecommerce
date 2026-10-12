@@ -22,6 +22,13 @@
       "when": 1791302183811,
       "tag": "0002_typical_black_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791799976865,
+      "tag": "0003_small_butterfly",
+      "breakpoints": true
     }
   ]
 }

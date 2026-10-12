@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 
 import { updatePaymentStatus } from '@/app/admin/(protected)/orders/actions';
 import type { PaymentStatus } from '@/app/db/schema';

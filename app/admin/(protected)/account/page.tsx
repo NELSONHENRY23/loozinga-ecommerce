@@ -9,7 +9,6 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/app/db';
 import { profiles } from '@/app/db/schema';
 
-import { createClient } from '@/utils/superbase/server';
 import ProfileForm from '@/components/admin/ProfileForm';
 import PasswordForm from '@/components/admin/PasswordForm';
 import { requireAdmin } from '@/utils/superbase/require-admin';

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 
 type ProductCardProps = {
@@ -17,8 +18,10 @@ export default function ProductCard({product}: ProductCardProps){
     const discountedPrice = hasOffer ? product.price * (1 - product.offer / 100) : product.price;
 
     return(
-        <article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-            <div className="relative aspect-square bg-gray-100">
+        <Link
+        href={`/products/${product.id}`}
+        className="block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
+      >  <div className="relative aspect-square bg-gray-100">
                 {
                     product.mainImage ? (
                         <Image
@@ -68,7 +71,7 @@ export default function ProductCard({product}: ProductCardProps){
                     }
                 </div>
             </div>
-        </article>
+            </Link>
     )
 
 }

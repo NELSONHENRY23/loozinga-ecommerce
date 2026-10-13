@@ -2,6 +2,8 @@
 
 html{
   background: #f1f2f7;
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
 }
 
 body{

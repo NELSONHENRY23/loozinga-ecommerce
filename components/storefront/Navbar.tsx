@@ -3,7 +3,7 @@ import { ShoppingCart, Store } from "lucide-react";
 
 export default function Navbar(){
     return(
-        <header className="sticky top-0 x-50 border-b border-gray-200 bg-white">
+        <header className="sticky top-0 z-100 w-full border-b border-gray-200 bg-white shadow-md">
             <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4">
                 <Link 
                    href="/"

@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { ShoppingCart, Store } from "lucide-react";
 
+import { useCart } from "./CartProvider";
+
 export default function Navbar(){
+    const { itemCount } = useCart();
+
     return(
         <header className="sticky top-0 z-100 w-full border-b border-gray-200 bg-white shadow-md">
             <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4">
@@ -28,13 +34,19 @@ export default function Navbar(){
                       Account
                    </Link>
 
-                   <span
-                     className="flex items-center gap-1 text-gray-400"
-                     title="Shopping cart coming soon"
-                     aria-label="Shopping cart coming soon"                   
-                   >
-                    <ShoppingCart size={21}/>
-                   </span>
+                   <Link
+            href="/cart"
+            aria-label={`Shopping cart with ${itemCount} items`}
+            className="relative text-gray-700 hover:text-black"
+          >
+            <ShoppingCart size={22} />
+
+            {itemCount > 0 && (
+              <span className="absolute -right-3 -top-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white">
+                {itemCount > 99 ? "99+" : itemCount}
+              </span>
+            )}
+          </Link>
                 </div>
             </nav>
 

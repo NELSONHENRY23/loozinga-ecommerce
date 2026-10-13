@@ -13,6 +13,7 @@ import {
 
 import Navbar from "@/components/storefront/Navbar";
 import ProductGallery from "@/components/storefront/ProductGallery";
+import AddToCartButton from "@/components/storefront/AddToCartButton";
 
 export const dynamic = "force-dynamic";
 
@@ -169,6 +170,17 @@ export default async function ProductDetailsPage({
                 </div>
               </dl>
             </div>
+
+            
+          <AddToCartButton
+            product={{
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              offer: product.offer,
+              image: images[0]?.secureUrl ?? null,
+            }}
+          />
 
             <div className="rounded-lg bg-gray-100 p-4 text-sm text-gray-600">
               Shopping cart and checkout functionality

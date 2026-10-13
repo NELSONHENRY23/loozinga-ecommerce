@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/app/db';
 import { profiles } from '@/app/db/schema';
 import { createClient } from '@/utils/superbase/server';
-import { logoutCustomer } from './actions';
+import { logoutCustomer } from './logout/actions';
 import { LogOut } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';

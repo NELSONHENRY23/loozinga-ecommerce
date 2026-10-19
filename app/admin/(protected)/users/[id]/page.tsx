@@ -15,6 +15,7 @@ import {
 import { db } from '@/app/db';
 import { orders, profiles } from '@/app/db/schema';
 import { createAdminClient } from '@/utils/superbase/admin';
+import CustomerBlockButton from '@/components/admin/CustomerBlockButton';
 
 type UserDetailsPageProps = {
   params: Promise<{
@@ -29,10 +30,8 @@ export default async function UserDetailsPage({
 
   const supabaseAdmin = createAdminClient();
 
-  const {
-    data: authData,
-    error: authError,
-  } = await supabaseAdmin.auth.admin.getUserById(id);
+  const { data: authData, error: authError } =
+    await supabaseAdmin.auth.admin.getUserById(id);
 
   if (authError || !authData.user) {
     notFound();
@@ -73,48 +72,38 @@ export default async function UserDetailsPage({
     .orderBy(sql`${orders.createdAt} desc`)
     .limit(5);
 
-  const name =
-    profile?.name ?? 'User';
+  const name = profile?.name ?? 'User';
 
-  const phone =
-    profile?.phone ?? '';
+  const phone = profile?.phone ?? '';
 
-  const role =
-    profile?.role ?? 'User';
+  const role = profile?.role ?? 'User';
 
-  const status =
-    authUser.banned_until
-      ? 'Blocked'
-      : 'Active';
+  const bannedUntil = authUser.banned_until
+  ? new Date(authUser.banned_until).getTime()
+  : 0;
 
-  const totalOrders =
-    Number(orderStats?.totalOrders ?? 0);
+  const isBlocked = bannedUntil > new Date().getTime();
 
-  const totalSpent =
-    Number(orderStats?.totalSpent ?? 0);
+  const status = isBlocked ? 'Blocked' : 'Active';
+
+  const totalOrders = Number(orderStats?.totalOrders ?? 0);
+
+  const totalSpent = Number(orderStats?.totalSpent ?? 0);
 
   return (
     <div className="p-5">
       {/* Heading */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-700">
-          User Details
-        </h1>
+        <h1 className="text-2xl font-semibold text-gray-700">User Details</h1>
 
         <div className="mt-2 flex gap-2 text-sm text-gray-500">
-          <Link
-            href="/admin"
-            className="transition hover:text-blue-500"
-          >
+          <Link href="/admin" className="transition hover:text-blue-500">
             Home
           </Link>
 
           <span>/</span>
 
-          <Link
-            href="/admin/users"
-            className="transition hover:text-blue-500"
-          >
+          <Link href="/admin/users" className="transition hover:text-blue-500">
             Users
           </Link>
 
@@ -142,13 +131,9 @@ export default async function UserDetailsPage({
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-gray-700">
-                {name}
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-700">{name}</h2>
 
-              <p className="mt-1 text-sm text-gray-400">
-                {role}
-              </p>
+              <p className="mt-1 text-sm text-gray-400">{role}</p>
             </div>
           </div>
 
@@ -161,6 +146,10 @@ export default async function UserDetailsPage({
           >
             {status}
           </span>
+
+          {role === 'Customer' && (
+            <CustomerBlockButton userId={authUser.id} isBlocked={isBlocked} />
+          )}
         </div>
       </section>
 
@@ -174,36 +163,22 @@ export default async function UserDetailsPage({
 
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <Mail
-                size={17}
-                className="mt-0.5 text-gray-400"
-              />
+              <Mail size={17} className="mt-0.5 text-gray-400" />
 
               <div>
-                <p className="text-xs text-gray-400">
-                  Email
-                </p>
+                <p className="text-xs text-gray-400">Email</p>
 
-                <p className="mt-1 text-sm text-gray-600">
-                  {userEmail || '-'}
-                </p>
+                <p className="mt-1 text-sm text-gray-600">{userEmail || '-'}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <Phone
-                size={17}
-                className="mt-0.5 text-gray-400"
-              />
+              <Phone size={17} className="mt-0.5 text-gray-400" />
 
               <div>
-                <p className="text-xs text-gray-400">
-                  Phone
-                </p>
+                <p className="text-xs text-gray-400">Phone</p>
 
-                <p className="mt-1 text-sm text-gray-600">
-                  {phone || '-'}
-                </p>
+                <p className="mt-1 text-sm text-gray-600">{phone || '-'}</p>
               </div>
             </div>
           </div>
@@ -217,20 +192,13 @@ export default async function UserDetailsPage({
 
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <CalendarDays
-                size={17}
-                className="mt-0.5 text-gray-400"
-              />
+              <CalendarDays size={17} className="mt-0.5 text-gray-400" />
 
               <div>
-                <p className="text-xs text-gray-400">
-                  Joined
-                </p>
+                <p className="text-xs text-gray-400">Joined</p>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  {new Date(
-                    authUser.created_at,
-                  ).toLocaleDateString('en-US', {
+                  {new Date(authUser.created_at).toLocaleDateString('en-US', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric',
@@ -240,44 +208,29 @@ export default async function UserDetailsPage({
             </div>
 
             <div>
-              <p className="text-xs text-gray-400">
-                Account Status
-              </p>
+              <p className="text-xs text-gray-400">Account Status</p>
 
-              <p className="mt-1 text-sm font-medium text-gray-600">
-                {status}
-              </p>
+              <p className="mt-1 text-sm font-medium text-gray-600">{status}</p>
             </div>
 
             <div>
-              <p className="text-xs text-gray-400">
-                Role
-              </p>
+              <p className="text-xs text-gray-400">Role</p>
 
-              <p className="mt-1 text-sm font-medium text-gray-600">
-                {role}
-              </p>
+              <p className="mt-1 text-sm font-medium text-gray-600">{role}</p>
             </div>
           </div>
         </section>
 
         {/* Activity */}
         <section className="rounded-md bg-white p-5 shadow-sm">
-          <h2 className="mb-4 font-semibold text-gray-700">
-            Activity
-          </h2>
+          <h2 className="mb-4 font-semibold text-gray-700">Activity</h2>
 
           <div className="space-y-4">
             <div className="flex items-start gap-3">
-              <ShoppingBag
-                size={17}
-                className="mt-0.5 text-gray-400"
-              />
+              <ShoppingBag size={17} className="mt-0.5 text-gray-400" />
 
               <div>
-                <p className="text-xs text-gray-400">
-                  Total Orders
-                </p>
+                <p className="text-xs text-gray-400">Total Orders</p>
 
                 <p className="mt-1 text-sm font-medium text-gray-700">
                   {totalOrders}
@@ -286,15 +239,10 @@ export default async function UserDetailsPage({
             </div>
 
             <div className="flex items-start gap-3">
-              <Wallet
-                size={17}
-                className="mt-0.5 text-gray-400"
-              />
+              <Wallet size={17} className="mt-0.5 text-gray-400" />
 
               <div>
-                <p className="text-xs text-gray-400">
-                  Total Spent
-                </p>
+                <p className="text-xs text-gray-400">Total Spent</p>
 
                 <p className="mt-1 text-sm font-medium text-gray-700">
                   ${totalSpent.toFixed(2)}
@@ -308,17 +256,12 @@ export default async function UserDetailsPage({
       {/* Recent Orders */}
       <section className="overflow-hidden rounded-md bg-white shadow-sm">
         <div className="border-b border-gray-100 px-5 py-4">
-          <h2 className="font-semibold text-gray-700">
-            Recent Orders
-          </h2>
+          <h2 className="font-semibold text-gray-700">Recent Orders</h2>
         </div>
 
         {recentOrders.length === 0 ? (
           <div className="px-5 py-10 text-center">
-            <ShoppingBag
-              size={30}
-              className="mx-auto mb-3 text-gray-300"
-            />
+            <ShoppingBag size={30} className="mx-auto mb-3 text-gray-300" />
 
             <p className="text-sm text-gray-400">
               No orders found for this user.
@@ -329,25 +272,15 @@ export default async function UserDetailsPage({
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                 <tr>
-                  <th className="px-5 py-3">
-                    Order
-                  </th>
+                  <th className="px-5 py-3">Order</th>
 
-                  <th className="px-5 py-3">
-                    Date
-                  </th>
+                  <th className="px-5 py-3">Date</th>
 
-                  <th className="px-5 py-3">
-                    Total
-                  </th>
+                  <th className="px-5 py-3">Total</th>
 
-                  <th className="px-5 py-3">
-                    Status
-                  </th>
+                  <th className="px-5 py-3">Status</th>
 
-                  <th className="px-5 py-3 text-center">
-                    Action
-                  </th>
+                  <th className="px-5 py-3 text-center">Action</th>
                 </tr>
               </thead>
 
@@ -359,14 +292,11 @@ export default async function UserDetailsPage({
                     </td>
 
                     <td className="px-5 py-4 text-gray-500">
-                      {order.createdAt.toLocaleDateString(
-                        'en-GB',
-                        {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        },
-                      )}
+                      {order.createdAt.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
                     </td>
 
                     <td className="px-5 py-4 font-medium text-gray-700">

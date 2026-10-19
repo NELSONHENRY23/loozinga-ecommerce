@@ -25,7 +25,23 @@ export async function loginCustomer(formData: FormData) {
     });
 
   if (error || !data.user) {
-    redirect('/account/login?error=Invalid credentials or unconfirmed email');
+    const isBlocked =
+        error?.code === 'user_banned' ||
+        /banned|blocked/i.test(error?.message ?? '');
+
+    if (isBlocked) {
+        redirect(
+            `/account/login?error=${encodeURIComponent(
+                'Your account is blocked. Please contact support for assistance.'
+            )}`
+        );
+    }
+
+    redirect(
+        `/account/login?error=${encodeURIComponent(
+            'Invalid credentials or unconfirmed email'
+        )}`
+    );
   }
 
   const [profile] = await db

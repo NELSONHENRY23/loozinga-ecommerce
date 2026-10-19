@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { db } from '@/app/db';
 import { orders, orderItems, products, profiles, productVariants } from '@/app/db/schema';
 import { createClient } from '@/utils/superbase/server';
+import { createAdminClient } from '@/utils/superbase/admin';
 
 const checkoutSchema = z.object({
     customerName: z.string().trim().min(2).max(150),
@@ -43,12 +44,72 @@ export async function placeOrder(input: CheckoutInput) {
 
     const {data: {user}, error } = await supabase.auth.getUser();
 
-    if(error || !user || !user.email){
-        return{
-             success: false,
-            message: 'Please sign in before placing an order.',
+    
+if (error || !user || !user.email) {
+    // A blocked account may fail normal authentication first.
+    // Check the existing server-side session to identify the account.
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session?.user?.id) {
+        const supabaseAdmin = createAdminClient();
+
+        const {
+            data: { user: currentAuthUser },
+            error: accountStatusError,
+        } = await supabaseAdmin.auth.admin.getUserById(
+            session.user.id
+        );
+
+        if (!accountStatusError && currentAuthUser) {
+            const bannedUntil = currentAuthUser.banned_until
+                ? new Date(currentAuthUser.banned_until).getTime()
+                : 0;
+
+            if (bannedUntil > new Date().getTime()) {
+                return {
+                    success: false,
+                    message:
+                        'Your account is blocked. Please contact support for assistance.',
+                };
+            }
         }
     }
+
+    return {
+        success: false,
+        message: 'Please sign in before placing an order.',
+    };
+}
+
+
+    // verify the account's current status using supabase Admin
+    const supabaseAdmin = createAdminClient();
+
+    const {
+        data: {user: currentAuthUser},
+        error: accountStatusError,
+    } = await supabaseAdmin.auth.admin.getUserById(user.id);
+
+    // Fail closed if we cannot verify the account
+    if(accountStatusError || !currentAuthUser){
+        return{
+            success: false,
+            message: 'Could not verify your account status. Please try again.'
+        }
+    }
+
+    const bannedUntil = currentAuthUser.banned_until
+        ? new Date(currentAuthUser.banned_until).getTime()
+        : 0;
+
+        if (bannedUntil > new Date().getTime()) {
+            return {
+                success: false,
+                message: 'Your account is blocked. Please contact support for assistance.',
+            };
+        }
 
     // verify customer role.
     const [profile] = await db.select({role: profiles.role})

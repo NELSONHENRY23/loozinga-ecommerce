@@ -7,8 +7,13 @@ import { profiles } from '@/app/db/schema';
 import { createClient } from '@/utils/superbase/server';
 import { logoutCustomer } from './logout/actions';
 import { LogOut } from 'lucide-react';
+import { createAdminClient } from '@/utils/superbase/admin';
 
 export const dynamic = 'force-dynamic';
+
+function getCurrentTime() {
+  return Date.now();
+}
 
 export default async function CustomerAccountPage() {
   const supabase = await createClient();
@@ -18,10 +23,41 @@ export default async function CustomerAccountPage() {
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
+  if (error || !user || !user.email) {
     redirect('/account/login');
   }
 
+  // Check whether the authnticated customer has been blocked.
+  const adminSupabase = createAdminClient();
+
+  const {data: {user: authUser}, error: adminError,} = await adminSupabase.auth.admin.getUserById(user.id);
+
+  // Fail closed if the account status cannot be verified.
+  if(adminError || !authUser){
+    await supabase.auth.signOut();
+
+    redirect(
+      `account/login?error=${encodeURIComponent('Unable to verify your account. Please sign in again.')}`
+    )
+  }
+
+  const bannedUntil = authUser.banned_until
+    ? new Date(authUser.banned_until).getTime()
+    : 0;
+
+  const isBlocked = bannedUntil > getCurrentTime();
+
+  if (isBlocked) {
+    await supabase.auth.signOut();
+
+    redirect(
+      `/account/login?error=${encodeURIComponent(
+          'Your account is blocked. Please contact support for assistance.'
+      )}`
+  );
+  }
+
+  // Retrieve the customer's profile.
   const [profile] = await db
     .select({
       name: profiles.name,
@@ -31,6 +67,7 @@ export default async function CustomerAccountPage() {
     .where(eq(profiles.id, user.id))
     .limit(1);
 
+    // Customers must not access the customer account page as administrators.
   if (profile?.role !== 'Customer') {
     redirect('/admin/login');
   }

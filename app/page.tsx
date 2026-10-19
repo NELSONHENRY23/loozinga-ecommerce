@@ -5,6 +5,7 @@ import { categories, productImages, products } from "./db/schema";
 
 import Navbar from "@/components/storefront/Navbar";
 import ProductCard from "@/components/storefront/ProductCard";
+import Footer from "@/components/storefront/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -89,10 +90,7 @@ export default async function HomePage(){
         </section>
       </main>
 
-<footer className="border-t broder-gray-200 bg-white px-5 py-6 text-center text-sm text-gray-500">
-  0 {new Date().getFullYear()} Loozinga.
-  All rights reserved.
-</footer>
+<Footer/>
     </div>
   )
 }

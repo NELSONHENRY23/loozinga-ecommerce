@@ -55,7 +55,7 @@ export default function CartPage(){
 
                 return (
                   <div
-                    key={item.id}
+                    key={`${item.id}-${item.color}`}
                     className="flex flex-col gap-5 rounded-xl bg-white p-5 shadow-sm sm:flex-row"
                   >
                     <Link
@@ -86,6 +86,10 @@ export default function CartPage(){
                           {item.name}
                         </Link>
 
+                        <p className="mt-1 text-sm text-gray-500">
+                          Color: {item.color}
+                        </p>
+
                         <p className="mt-2 font-bold">
                           ${unitPrice.toFixed(2)}
                         </p>
@@ -99,6 +103,7 @@ export default function CartPage(){
                             onClick={() =>
                               updateQuantity(
                                 item.id,
+                                item.color,
                                 item.quantity - 1,
                               )
                             }
@@ -118,6 +123,7 @@ export default function CartPage(){
                             onClick={() =>
                               updateQuantity(
                                 item.id,
+                                item.color,
                                 item.quantity + 1,
                               )
                             }
@@ -129,7 +135,7 @@ export default function CartPage(){
 
                         <button
                           type="button"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeItem(item.id, item.color)}
                           className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800"
                         >
                           <Trash2 size={17} />
@@ -170,9 +176,12 @@ export default function CartPage(){
                 be calculated at checkout.
               </p>
 
-              <div className="mt-6 rounded-lg bg-gray-100 p-4 text-center text-sm text-gray-600">
-                Checkout coming in Phase 4
-              </div>
+              <Link
+               href="/checkout"
+               className="mt-6 block rounded-lg bg-gray-900 px-5 py-4 text-center font-semibold text-white transition hover:bg-gray-700"
+              >
+              Proceed to Checkout
+              </Link>
 
               <Link
                 href="/#products"

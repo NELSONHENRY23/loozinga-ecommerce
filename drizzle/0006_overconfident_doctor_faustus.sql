@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "product_images_variant_unique" ON "product_images" USING btree ("variant_id");

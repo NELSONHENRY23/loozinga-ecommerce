@@ -47,16 +47,39 @@ export const products = pgTable("products", {
 export const productImages = pgTable("product_images", {
     id: uuid("id").defaultRandom().primaryKey(),
     productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+    variantId: uuid('variant_id').references(() => productVariants.id, {onDelete: 'set null'}),
     secureUrl: text("secure_url").notNull(),
     publicId: text('public_id'),
     position: integer("position").notNull(),
     createdAt: timestamp("created_at",{withTimezone: true,}).defaultNow().notNull(),
 }, 
     (table) => [
-        uniqueIndex("product_images_product_position_unique").on(table.productId, table.position)
+      // Keep the existing position rule during migration 
+        uniqueIndex("product_images_product_position_unique").on(table.productId, table.position),
+        // A color variant can have only one image
+        uniqueIndex('product_images_variant_unique').on(table.variantId,)
     ]
 )
 
+export const productVariants = pgTable(
+    'product_variants', 
+    {
+        id: uuid('id').defaultRandom().primaryKey(),
+        productId: uuid('product_id')
+          .notNull()
+          .references(() => products.id, {
+            onDelete: 'cascade',
+          }),
+        color: varchar('color', { length: 100 })
+          .notNull(),
+        createdAt: timestamp('created_at', {
+          withTimezone: true,
+        }).defaultNow().notNull(),
+      }, (table) => [
+    uniqueIndex('product_variants_product_color_unique').on(table.productId, table.color),
+])
+
+export type ProductVariant = typeof productVariants.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type ProductImage = typeof productImages.$inferSelect;
 
@@ -102,6 +125,8 @@ export const orderItems = pgTable('order_items', {
     orderId: uuid('order_id').notNull().references(() => orders.id, {onDelete: 'cascade'}),
     productId: uuid('product_id').references(() => products.id, {onDelete: 'set null'}),
     productName: text('product_name').notNull(),
+    variantId: uuid('variant_id').references(() => productVariants.id, {onDelete: 'set null'}),
+    color: varchar('color', {length: 100}),
     quantity: integer('quantity').notNull(),
     price: numeric('price', {precision: 10, scale: 2}).notNull(),
     createdAt: timestamp('created_at', {withTimezone: true,}).defaultNow().notNull(),

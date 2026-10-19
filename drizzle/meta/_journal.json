@@ -36,6 +36,20 @@
       "when": 1791806484100,
       "tag": "0004_marvelous_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792056421425,
+      "tag": "0005_clammy_blue_shield",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792072231039,
+      "tag": "0006_overconfident_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }

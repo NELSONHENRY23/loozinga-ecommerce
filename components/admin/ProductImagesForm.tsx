@@ -1,21 +1,24 @@
 'use client';
 
 import Image from 'next/image';
-import { ChangeEvent, FormEvent, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Trash2, X } from 'lucide-react';
+import { Check, ChevronRight, ImagePlus, Trash2 } from 'lucide-react';
 
 import { uploadCloudinaryImage } from '@/utils/uploadCloudinary';
 import {
-  deleteProductImage,
-  saveProductImages,
+  saveVariantImage,
+  deleteVariantImage,
 } from '@/app/admin/(protected)/products/image-actions';
+import Link from 'next/link';
 
-type ExistingImage = {
+type ProductVariant = {
   id: string;
-  position: number;
-  secureUrl: string;
-  createdAt: Date;
+  color: string;
+  image: {
+    id: string;
+    secureUrl: string;
+  } | null;
 };
 
 type ProductImagesFormProps = {
@@ -23,362 +26,303 @@ type ProductImagesFormProps = {
     id: string;
     name: string;
   };
-
-  existingImages: ExistingImage[];
+  variants: ProductVariant[];
 };
 
-const allowedImageTypes = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/webp',
-];
-
-const imageSlots = [
-  {
-    position: 0,
-    label: 'Main Image',
-  },
-  {
-    position: 1,
-    label: 'Image 1',
-  },
-  {
-    position: 2,
-    label: 'Image 2',
-  },
-  {
-    position: 3,
-    label: 'Image 3',
-  },
-  {
-    position: 4,
-    label: 'Image 4',
-  },
-];
+const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
 export default function ProductImagesForm({
   product,
-  existingImages,
+  variants,
 }: ProductImagesFormProps) {
   const router = useRouter();
-
   const [isPending, startTransition] = useTransition();
 
+  const [variantId, setVariantId] = useState(variants[0]?.id ?? '');
+  const [file, setFile] = useState<File | null>(null);
+  const [previewState, setPreviewState] = useState<{
+    file: File;
+    url: string;
+  } | null>(null);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const preview = previewState?.file === file ? previewState.url : '';
 
-  const [files, setFiles] = useState<(File | null)[]>([
-    null,
-    null,
-    null,
-    null,
-    null,
-  ]);
+  const selectedVariant = variants.find((variant) => variant.id === variantId);
 
-  // save database / cloudinary images.
-  const [existingUrls, setExistingUrls] = useState<string[]>(
-    Array.from(
-      { length: 5 },
-      (_, position) =>
-        existingImages.find((image) => image.position === position)
-          ?.secureUrl ?? '',
-    ),
-  );
+  useEffect(() => {
+    const url = previewState?.url;
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [previewState]);
 
-  // Local browser previews for files that have not been uploaded yet.
-  const [selectedPreviews, setSelectedPreviews] = useState<string[]>([
-    '',
-    '',
-    '',
-    '',
-    '',
-  ]);
-
-  function handleImageChange(
-    event: ChangeEvent<HTMLInputElement>,
-    position: number,
-  ) {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError('');
+    setMessage('');
+
+    if (!variantId) {
+      setError('Add a color variant before uploading an image.');
+      return;
+    }
+
+    if (!file) {
+      setError('Choose an image first.');
+      return;
+    }
 
     if (!allowedImageTypes.includes(file.type)) {
-      setError('Only JPG, JPEG, PNG, WEBP images are allowed.');
-
-      event.target.value = '';
-      return;
-    }
-
-    // Revoke previous unsaved preview for this slot.
-    const oldPreview = selectedPreviews[position];
-
-    if (oldPreview.startsWith('blob:')) {
-      URL.revokeObjectURL(oldPreview);
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-
-    setFiles((previous) => {
-      const updated = [...previous];
-
-      updated[position] = file;
-
-      return updated;
-    });
-
-    setSelectedPreviews((previous) => {
-      const updated = [...previous];
-
-      updated[position] = previewUrl;
-
-      return updated;
-    });
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    setError('');
-
-    const selectedImages = files
-      .map((file, position) =>
-        file
-          ? {
-              file,
-              position,
-            }
-          : null,
-      )
-      .filter(
-        (
-          item,
-        ): item is {
-          file: File;
-          position: number;
-        } => item !== null,
-      );
-
-    if (selectedImages.length === 0) {
-      setError('Choose at least one image to update.');
+      setError('Choose a JPG, PNG, or WEBP image.');
       return;
     }
 
     startTransition(async () => {
       try {
-        const uploaded = await Promise.all(
-          selectedImages.map(async ({ file, position }) => {
-            const image = await uploadCloudinaryImage(file, product.id);
-            return {
-              position,
-              secureUrl: image.secureUrl,
-              publicId: image.publicId,
-            };
-          }),
-        );
+        const uploaded = await uploadCloudinaryImage(file, product.id);
 
-        const result = await saveProductImages({
+        const result = await saveVariantImage({
           productId: product.id,
-          images: uploaded,
+          variantId,
+          secureUrl: uploaded.secureUrl,
+          publicId: uploaded.publicId,
         });
 
-        if (!result?.success) {
-          setError(result?.message ?? 'Failed to save images.');
+        if (!result.success) {
+          setError(result.message);
           return;
         }
 
-        router.replace('/admin/products');
-      } catch (error) {
-        console.error(error);
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : 'One or more images could not be uploaded.',
-        );
-      }
-    });
-  }
-
-  function handleDeleteImage(position: number) {
-    setError('');
-
-    /*
-      If this slot has a newly selected file, only remove the local file.
-
-      Do not delete the exisiting database image.
-    */
-    if (files[position]) {
-      const preview = selectedPreviews[position];
-
-      if (preview.startsWith('blob:')) {
-        URL.revokeObjectURL(preview);
-      }
-
-      setFiles((previous) => {
-        const updated = [...previous];
-
-        updated[position] = null;
-
-        return updated;
-      });
-
-      setSelectedPreviews((previous) => {
-        const updated = [...previous];
-
-        updated[position] = '';
-
-        return updated;
-      });
-
-      return;
-    }
-
-    // No new file. Delete the saved image.
-    if (!existingUrls[position]) {
-      return;
-    }
-
-    startTransition(async () => {
-      try {
-        const result = await deleteProductImage({
-          productId: product.id,
-          position,
-        });
-
-        if (!result?.success) {
-          setError(result?.message ?? 'Image could not be deleted.');
-          return;
-        }
-
-        setExistingUrls((previous) => {
-          const updated = [...previous];
-
-          updated[position] = '';
-
-          return updated;
-        });
-
+        setFile(null);
+        setPreviewState(null);
+        setMessage(result.message);
         router.refresh();
-      } catch (error) {
-        console.error(error);
+      } catch (cause) {
+        console.error(cause);
+        setError('Image upload failed. Please try again.');
+      }
+    });
+  }
 
-        setError('Image could not be deleted.');
+  function handleDelete() {
+    if (!selectedVariant?.image) return;
+
+    if (!window.confirm(`Remove the image for ${selectedVariant.color}?`)) {
+      return;
+    }
+
+    setError('');
+    setMessage('');
+
+    startTransition(async () => {
+      try {
+        const result = await deleteVariantImage({
+          productId: product.id,
+          variantId,
+        });
+
+        if (!result.success) {
+          setError(result.message);
+          return;
+        }
+
+        setMessage(result.message);
+        router.refresh();
+      } catch (cause) {
+        console.error(cause);
+        setError('Could not remove this image.');
       }
     });
   }
 
   return (
-    <div className="p-6">
-      {/* Page heading */}
+    <div className="max-w-3xl p-6">
+      {/* Heading */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Edit Product Images
-        </h1>
+        <h1 className="text-2xl font-semibold text-gray-700">Manage Product</h1>
 
-        <p className="mt-1 text-sm text-gray-500">
-          Home / Products / Edit Images
-        </p>
+        <div className="mt-2 flex items-center gap-1 text-sm text-gray-500">
+          <Link href="/admin" className="hover:text-blue-500">
+            Home
+          </Link>
+
+          <ChevronRight size={14} />
+          <Link href="/admin/products" className="hover:text-blue-500">
+            Product
+          </Link>
+
+          <ChevronRight size={14} />
+
+          <span>Images</span>
+        </div>
       </div>
 
-      {/* Images panel */}
-      <div className="rounded-lg bg-white shadow-sm">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="font-semibold text-gray-700">Update Product Images</h2>
+      <h1 className="text-2xl font-semibold text-gray-800">
+        Product Color Images
+      </h1>
 
-          <p className="mt-1 text-sm text-gray-500">
-            {product.name} • Product ID: {product.id}
-          </p>
+      <p className="mt-1 text-sm text-gray-500">
+        {product.name} — upload one image for each color.
+      </p>
+
+      <form
+        onSubmit={handleSubmit}
+        className="mt-6 space-y-5 rounded-lg bg-white p-6 shadow-sm"
+      >
+        <div>
+          <label htmlFor="variant" className="mb-2 block text-sm font-medium">
+            Product color
+          </label>
+
+          <select
+            id="variant"
+            value={variantId}
+            onChange={(event) => {
+              setVariantId(event.target.value);
+              setFile(null);
+              setError('');
+              setMessage('');
+            }}
+            disabled={isPending || variants.length === 0}
+            className="w-full rounded-md border border-gray-300 px-3 py-2"
+          >
+            {variants.length === 0 && (
+              <option value="">No colors available</option>
+            )}
+
+            {variants.map((variant) => (
+              <option key={variant.id} value={variant.id}>
+                {variant.color}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {imageSlots.map(({ position, label }) => {
-              const preview =
-                selectedPreviews[position] || existingUrls[position];
+        {selectedVariant?.image && !preview && (
+          <div>
+            <p className="mb-2 text-sm font-medium">
+              Current {selectedVariant.color} image
+            </p>
 
-              const hasNewFile = Boolean(files[position]);
-
-              return (
-                <div
-                  key={position}
-                  className="rounded-lg border border-gray-200 p-4"
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">
-                      {label}
-                    </label>
-
-                    {preview && (
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() => handleDeleteImage(position)}
-                        className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Trash2 size={15} />
-                        {hasNewFile ? 'Remove' : 'Delete'}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Image preview */}
-                  <div className="relative mb-3 flex h-44 items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50">
-                    {!preview ? (
-                      <span className="text-sm text-gray-400">No image</span>
-                    ) : (
-                      <Image
-                        src={preview}
-                        alt={label}
-                        fill
-                        unoptimized
-                        className="rounded-md object-cover"
-                      />
-                    )}
-                  </div>
-
-                  {/* File input */}
-                  <input
-                    type="file"
-                    accept="image/jpeg, image/jpg, image/png, image/webp"
-                    disabled={isPending}
-                    onChange={(event) => handleImageChange(event, position)}
-                    className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Error */}
-          {error && (
-            <p className="mt-4 text-sm font-medium text-red-500">{error}</p>
-          )}
-
-          {/* Actions */}
-          <div className="mt-8 flex gap-3 border-t border-gray-200 pt-6">
-            <button
-              type="submit"
-              disabled={isPending}
-              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Check size={17} />
-
-              {isPending ? 'Updating...' : 'Update Images'}
-            </button>
+            <div className="relative aspect-square max-w-sm overflow-hidden rounded-lg bg-gray-100">
+              <Image
+                src={selectedVariant.image.secureUrl}
+                alt={`${product.name} - ${selectedVariant.color}`}
+                fill
+                sizes="384px"
+                className="object-cover"
+              />
+            </div>
 
             <button
               type="button"
+              onClick={handleDelete}
               disabled={isPending}
-              onClick={() => router.back()}
-              className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-3 inline-flex items-center gap-2 text-sm text-red-600 disabled:opacity-50"
             >
-              <X size={17} />
-              Cancel
+              <Trash2 size={16} />
+              Remove image
             </button>
           </div>
-        </form>
+        )}
+
+        <div>
+          <label htmlFor="image" className="mb-2 block text-sm font-medium">
+            {selectedVariant?.image
+              ? 'Choose replacement image'
+              : 'Upload image'}
+          </label>
+
+          <input
+            id="image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={isPending || !variantId}
+            onChange={(event) => {
+              const selectedFile = event.target.files?.[0] ?? null;
+              setFile(selectedFile);
+              setPreviewState(
+                selectedFile
+                  ? {
+                      file: selectedFile,
+                      url: URL.createObjectURL(selectedFile),
+                    }
+                  : null,
+              );
+              setError('');
+              setMessage('');
+            }}
+            className="block w-full rounded-md border border-gray-300 p-2 text-sm"
+          />
+        </div>
+
+        {preview && (
+          <div className="relative aspect-square max-w-sm overflow-hidden rounded-lg bg-gray-100">
+            <Image
+              src={preview}
+              alt="Selected image preview"
+              fill
+              unoptimized
+              className="object-cover"
+            />
+          </div>
+        )}
+
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
+        {message && (
+          <p role="status" className="text-sm text-green-700">
+            {message}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={isPending || !file || !variantId}
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isPending ? (
+            'Saving image...'
+          ) : (
+            <>
+              {selectedVariant?.image ? (
+                <Check size={17} />
+              ) : (
+                <ImagePlus size={17} />
+              )}
+              {selectedVariant?.image ? 'Replace Image' : 'Save Image'}
+            </>
+          )}
+        </button>
+      </form>
+
+      <div className="mt-6 rounded-lg border border-gray-200 bg-white p-5">
+        <h2 className="font-semibold">Color images</h2>
+
+        <div className="mt-3 space-y-2">
+          {variants.map((variant) => (
+            <button
+              key={variant.id}
+              type="button"
+              onClick={() => {
+                setVariantId(variant.id);
+                setFile(null);
+                setError('');
+                setMessage('');
+              }}
+              className="flex w-full items-center justify-between rounded-md border border-gray-200 p-3 text-left hover:bg-gray-50"
+            >
+              <span>{variant.color}</span>
+              <span className="text-sm text-gray-500">
+                {variant.image ? 'Image saved' : 'No image yet'}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

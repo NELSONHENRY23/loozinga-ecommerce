@@ -40,6 +40,8 @@ export default async function OrderDetailsPage({
     id: orderItems.id,
     productId: orderItems.productId,
     productName: orderItems.productName,
+    variantId: orderItems.variantId,
+    color: orderItems.color,
     quantity: orderItems.quantity,
     price: orderItems.price,
   })
@@ -221,6 +223,7 @@ export default async function OrderDetailsPage({
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
                 <th className="px-5 py-3">Product</th>
+                <th className='px-5 py-3'>Color</th>
                 <th className="px-5 py-3">Price</th>
                 <th className="px-5 py-3">Quantity</th>
                 <th className="px-5 py-3 text-right">
@@ -234,7 +237,7 @@ export default async function OrderDetailsPage({
               items.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-5 py-8 text-center text-gray-400"
                   >
                     No order items found.
@@ -249,6 +252,10 @@ export default async function OrderDetailsPage({
                 <tr key={item.id}>
                   <td className="px-5 py-4 font-medium text-gray-700">
                     {item.productName}
+                  </td>
+
+                  <td className='px-5 py-4 text-gray-500'>
+                    {item.color ?? "—"}
                   </td>
 
                   <td className="px-5 py-4 text-gray-500">

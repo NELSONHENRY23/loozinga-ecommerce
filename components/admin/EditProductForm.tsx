@@ -2,9 +2,10 @@
 
 import { ChangeEvent, FormEvent, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, X } from 'lucide-react';
+import { Check, ChevronRight, X } from 'lucide-react';
 
 import { updateProduct } from '@/app/admin/(protected)/products/actions';
+import Link from 'next/link';
 
 type Product = {
   id: string;
@@ -98,9 +99,19 @@ export default function EditProductForm({
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Edit Product</h1>
 
-        <p className="mt-1 text-sm text-gray-500">
-          Home / Products / Edit Product
-        </p>
+        <div className="mt-2 flex items-center gap-1 text-sm text-gray-500">
+          <Link href="/admin" className="hover:text-blue-500">
+            Home
+          </Link>
+
+          <ChevronRight size={14} />
+          <Link href="/admin/products" className="hover:text-blue-500">
+            Products
+          </Link>
+
+          <ChevronRight size={14} />
+          <span>Edit Product</span>
+        </div>
       </div>
 
       {/* Form card */}

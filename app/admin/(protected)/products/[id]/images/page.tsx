@@ -2,7 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import Link from "next/link";
 
 import { db } from "@/app/db";
-import { products, productImages } from "@/app/db/schema";
+import { products, productImages, productVariants } from "@/app/db/schema";
 import ProductImagesForm from "@/components/admin/ProductImagesForm";
 
 export default async function EditProductImagesPage({
@@ -16,8 +16,7 @@ export default async function EditProductImagesPage({
    Product and images do not depend
    on each other, so load both together.
   */
-  const [productResult, images] = 
-  await Promise.all([
+  const [productResult, variants, images] = await Promise.all([
     db.select({
         id: products.id,
         name: products.name,
@@ -26,8 +25,18 @@ export default async function EditProductImagesPage({
       .where(eq(products.id, id))
       .limit(1),
 
+      db
+    .select({
+      id: productVariants.id,
+      color: productVariants.color,
+    })
+    .from(productVariants)
+    .where(eq(productVariants.productId, id))
+    .orderBy(asc(productVariants.color)),
+
       db.select({
         id: productImages.id,
+        variantId: productImages.variantId,
         position: productImages.position,
         secureUrl: productImages.secureUrl,
         createdAt: productImages.createdAt,
@@ -44,6 +53,13 @@ export default async function EditProductImagesPage({
     ]);
 
     const product = productResult[0];
+
+    const variantsWithImages = variants.map((variant) => ({
+      ...variant,
+      image:
+        images.find((image) => image.variantId === variant.id) ?? null,
+    }));
+
 
   if (!product) {
     return (
@@ -70,7 +86,7 @@ export default async function EditProductImagesPage({
   return (
     <ProductImagesForm
       product={product}
-      existingImages={images}
+      variants={variantsWithImages}
     />
   );
 }

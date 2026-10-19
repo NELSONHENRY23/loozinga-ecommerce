@@ -9,11 +9,11 @@ import {
   categories,
   productImages,
   products,
+  productVariants,
 } from "@/app/db/schema";
 
 import Navbar from "@/components/storefront/Navbar";
-import ProductGallery from "@/components/storefront/ProductGallery";
-import AddToCartButton from "@/components/storefront/AddToCartButton";
+import ProductVariantSelector from "@/components/storefront/ProductVariantSelector";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +36,7 @@ export default async function ProductDetailsPage({
     notFound();
   }
 
-  // Fetch the requested product and its category.
+  // Fetch the product and its category.
   const productResult = await db
     .select({
       id: products.id,
@@ -61,10 +61,21 @@ export default async function ProductDetailsPage({
     notFound();
   }
 
-  // Fetch all product images ordered by their position.
-  const images = await db
+  // Fetch the product's available color variants.
+  const variants = await db
+    .select({
+      id: productVariants.id,
+      color: productVariants.color,
+    })
+    .from(productVariants)
+    .where(eq(productVariants.productId, id))
+    .orderBy(asc(productVariants.createdAt));
+
+  // Fetch all images once, including their variant associations.
+  const productImageResults = await db
     .select({
       id: productImages.id,
+      variantId: productImages.variantId,
       secureUrl: productImages.secureUrl,
       position: productImages.position,
     })
@@ -74,6 +85,24 @@ export default async function ProductDetailsPage({
       asc(productImages.position),
       asc(productImages.id),
     );
+
+  // Associate each color variant with its image, if available.
+  const variantsWithImages = variants.map((variant) => ({
+    ...variant,
+    image:
+      productImageResults.find(
+        (image) => image.variantId === variant.id,
+      ) ?? null,
+  }));
+
+  // Keep older, non-variant images working.
+  const legacyImages = productImageResults
+    .filter((image) => image.variantId === null)
+    .map(({ id, secureUrl, position }) => ({
+      id,
+      secureUrl,
+      position,
+    }));
 
   const hasOffer =
     product.offer > 0 && product.offer <= 100;
@@ -96,10 +125,17 @@ export default async function ProductDetailsPage({
         </Link>
 
         <div className="grid grid-cols-1 items-start gap-8 rounded-2xl bg-white p-5 shadow-sm md:grid-cols-2 lg:gap-10 lg:p-10">
-          {/* Product Images */}
-          <ProductGallery
-            productName={product.name}
-            images={images}
+          {/* Product Images and Color Selection */}
+          <ProductVariantSelector
+            product={{
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              offer: product.offer,
+              color: product.color,
+            }}
+            variants={variantsWithImages}
+            legacyImages={legacyImages}
           />
 
           {/* Product Information */}
@@ -135,6 +171,7 @@ export default async function ProductDetailsPage({
               </div>
             </div>
 
+            {/* Description */}
             <div className="border-t border-gray-200 pt-6">
               <h2 className="mb-3 text-lg font-semibold">
                 Product Description
@@ -145,6 +182,7 @@ export default async function ProductDetailsPage({
               </p>
             </div>
 
+            {/* Product Details */}
             <div className="border-t border-gray-200 pt-6">
               <h2 className="mb-4 text-lg font-semibold">
                 Product Details
@@ -155,36 +193,24 @@ export default async function ProductDetailsPage({
                   <dt className="text-gray-500">
                     Category
                   </dt>
+
                   <dd className="font-medium">
                     {product.categoryName ?? "Uncategorized"}
                   </dd>
                 </div>
 
-                <div className="flex justify-between gap-4">
-                  <dt className="text-gray-500">
-                    Color
-                  </dt>
-                  <dd className="font-medium">
-                    {product.color}
-                  </dd>
-                </div>
+                {variants.length === 0 && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-gray-500">
+                      Color
+                    </dt>
+
+                    <dd className="font-medium">
+                      {product.color}
+                    </dd>
+                  </div>
+                )}
               </dl>
-            </div>
-
-            
-          <AddToCartButton
-            product={{
-              id: product.id,
-              name: product.name,
-              price: product.price,
-              offer: product.offer,
-              image: images[0]?.secureUrl ?? null,
-            }}
-          />
-
-            <div className="rounded-lg bg-gray-100 p-4 text-sm text-gray-600">
-              Shopping cart and checkout functionality
-              will be available in the next development phase.
             </div>
           </div>
         </div>

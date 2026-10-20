@@ -66,7 +66,7 @@ export default async function HomePage(){
           className="mx-auto max-w-7xl px-5 py-14"
         >
           <div className="mb-8">
-            <h2 className="text3xl font-bold">Latest Products</h2>
+            <h2 className="text-3xl font-bold">Latest Products</h2>
             
             <p className="mt-2 text-gray-500">Discover the latest additions to our store.</p>
           </div>

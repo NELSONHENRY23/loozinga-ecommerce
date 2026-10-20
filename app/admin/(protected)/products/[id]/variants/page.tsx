@@ -6,6 +6,7 @@ import { db } from '@/app/db';
 import {
   products,
   productVariants,
+  productVariantSizes
 } from '@/app/db/schema';
 
 import { requireAdmin } from '@/utils/superbase/require-admin';
@@ -16,10 +17,12 @@ type Props = {
 }
 
 export default async function ProductVariantsPage({params,}:Props) {
-    await requireAdmin();
+  // Require an administrator  
+  await requireAdmin();
 
     const { id } = await params;
 
+    // Validate the product ID
     const uuidPattern =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
  
@@ -27,6 +30,7 @@ export default async function ProductVariantsPage({params,}:Props) {
         notFound();
       }
 
+      // Fetch the product and confirm it exists
       const [product] = await db
     .select({
       id: products.id,
@@ -40,14 +44,53 @@ export default async function ProductVariantsPage({params,}:Props) {
         notFound();
     }
 
+    // fetch its variants and configured sizes
     const variants = await db.select({
         id: productVariants.id, 
         color: productVariants.color,
+        size: productVariantSizes.size,
     })
     .from(productVariants)
+    .leftJoin(
+      productVariantSizes,
+      eq(productVariantSizes.variantId, productVariants.id),
+    )
     .where(eq(productVariants.productId, id))
-    .orderBy(asc(productVariants.createdAt));
+    .orderBy(
+      asc(productVariants.createdAt),
+      asc(productVariantSizes.size),
+    );
 
+    // Group the joined rows into the nested structure. 
+    const variantWithSizes = Array.from(
+      // Group repeated variant Ids and collect sizes.
+      variants.reduce((grouped, row) => {
+        const exisiting = grouped.get(row.id);
+
+        if(exisiting){
+    
+          if(row.size !== null){
+            exisiting.sizes.push(row.size);
+          }
+
+        }
+        else
+        {
+          grouped.set(row.id, {
+            id: row.id,
+            color: row.color,
+            sizes: row.size === null ? [] : [row.size],
+          });
+        }
+
+        return grouped;
+      }, new Map<string, {id: string; color: string; sizes: string[]}>()),
+
+      // convert th grouped values to an array
+      ([, variant]) => variant,
+    );
+
+    
     return(
         <div className="p-5">
              <Link
@@ -67,7 +110,7 @@ export default async function ProductVariantsPage({params,}:Props) {
         </p>
         </div>
 
-        <ProductVariantsForm productId={product.id} variants={variants}/>
+        <ProductVariantsForm productId={product.id} variants={variantWithSizes}/>
         </div>
     )
 }

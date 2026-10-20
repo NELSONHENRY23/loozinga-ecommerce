@@ -83,6 +83,22 @@ export type ProductVariant = typeof productVariants.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type ProductImage = typeof productImages.$inferSelect;
 
+// product variant sizes schema
+export const productVariantSizes = pgTable(
+  'product_variant_sizes', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    variantId: uuid('variant_id').notNull().references(()=>productVariants.id, {onDelete: 'cascade'}),
+    size: varchar('size', {length: 50}).notNull(),
+    createdAt: timestamp('created_at', {withTimezone: true,}).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('product_variant_sizes_variant_size_unique')
+    .on(table.variantId, table.size),
+  ]
+)
+
+export type ProductVariantSize = typeof productVariantSizes.$inferSelect;
+
 // Orders Schema
 export const paymentMethodEnum = pgEnum('payment_method', [
     'COD',
@@ -127,6 +143,7 @@ export const orderItems = pgTable('order_items', {
     productName: text('product_name').notNull(),
     variantId: uuid('variant_id').references(() => productVariants.id, {onDelete: 'set null'}),
     color: varchar('color', {length: 100}),
+    size: varchar('size', {length: 50}),
     quantity: integer('quantity').notNull(),
     price: numeric('price', {precision: 10, scale: 2}).notNull(),
     createdAt: timestamp('created_at', {withTimezone: true,}).defaultNow().notNull(),

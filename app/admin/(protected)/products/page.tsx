@@ -1,7 +1,7 @@
 import { and, count, desc, eq } from 'drizzle-orm';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Images, Pencil } from 'lucide-react';
+import { Images, Pencil, Ruler } from 'lucide-react';
 
 import { db } from '@/app/db';
 import { categories, productImages, products } from '@/app/db/schema';
@@ -136,6 +136,8 @@ export default async function ProductsPage({
 
                 <th className="px-5 py-4">Images</th>
 
+                <th className='px-5 py-4'>Variants</th>
+
                 <th className="px-5 py-4">Edit</th>
 
                 <th className="px-5 py-4">Delete</th>
@@ -146,7 +148,7 @@ export default async function ProductsPage({
               {productList.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={11}
+                    colSpan={12}
                     className="px-5 py-10 text-center text-gray-400"
                   >
                     No products found.
@@ -206,7 +208,7 @@ export default async function ProductsPage({
                     <td className="px-5 py-4">
                       <Link
                         href={`/admin/products/${product.id}/images`}
-                        className="inline-flex w-fit items-center gap-2 rounded bg-amber-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-amber-600"
+                        className="inline-flex w-fit whitespace-nowrap items-center gap-2 rounded bg-amber-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-amber-600"
                       >
                         <Images size={16} />
                         Manage Images
@@ -215,8 +217,18 @@ export default async function ProductsPage({
 
                     <td className="px-5 py-4">
                       <Link
+                        href={`/admin/products/${product.id}/variants`}
+                        className="inline-flex w-fit whitespace-nowrap items-center gap-2 rounded bg-purple-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-purple-700"
+                      >
+                        <Ruler size={16} />
+                        Manage Colors & Sizes
+                      </Link>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <Link
                         href={`/admin/products/${product.id}/edit`}
-                        className="inline-flex items-center gap-2 rounded bg-blue-500 px-3 py-2 text-white transition hover:bg-blue-600"
+                        className="inline-flex w-fit items-center gap-2 rounded bg-blue-500 px-3 py-2 text-white transition hover:bg-blue-600"
                       >
                         <Pencil size={16} />
                         Edit

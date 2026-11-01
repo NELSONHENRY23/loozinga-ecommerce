@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 
 import { db } from '@/app/db';
-import { orders, orderItems, products, profiles, productVariants } from '@/app/db/schema';
+import { orders, orderItems, products, profiles, productVariants, productVariantSizes } from '@/app/db/schema';
 import { createClient } from '@/utils/superbase/server';
 import { createAdminClient } from '@/utils/superbase/admin';
 
@@ -20,6 +20,7 @@ const checkoutSchema = z.object({
         z.object({
             id: z.uuid(),
             variantId: z.uuid().nullable(),
+            size: z.string().trim().min(1).max(50).nullable(),
             quantity: z.number().int().min(1).max(99),
         }),
 
@@ -127,7 +128,7 @@ if (error || !user || !user.email) {
     const data = parsed.data;
 
     // Prevent duplcate lines for the same product and variant
-    const ItemKeys = data.items.map((item) => `${item.id}:${item.variantId ?? 'no-variant'}`);
+    const ItemKeys = data.items.map((item) => `${item.id}:${item.variantId ?? 'no-variant'}:${item.size ?? 'no-size'}`);
 
     // Reject duplicate product IDs
     if(new Set(ItemKeys).size !== ItemKeys.length){
@@ -178,10 +179,28 @@ if (error || !user || !user.email) {
 
         const variantMap = new Map(availableVariants.map((variant) => [
             variant.id, variant
-        ]))
+        ]));
 
         const variantByProduct = new Set(availableVariants.map((variant) => variant.productId));
 
+        // Fetch available sizes from the database.
+        const availableSizes = await db.select({
+            variantId: productVariantSizes.variantId,
+            size: productVariantSizes.size,
+        })
+        .from(productVariantSizes)
+        .where(
+            inArray(
+                productVariantSizes.variantId,
+                availableVariants.map((variant) => variant.id),
+            )
+        );
+
+        const sizeKeys = new Set(
+            availableSizes.map(
+                (item) => `${item.variantId}:${item.size}`,
+            )
+        )
 
         // Calculate prices using server-side data
         const calculatedItems = data.items.map((item) => {
@@ -202,12 +221,18 @@ if (error || !user || !user.email) {
                     throw new Error('Invalid product variant.')
                 }
 
+                if(!item.size || !sizeKeys.has(`${variant.id}:${item.size}`)){
+                    throw new Error('Please select a valid available size.');
+                }
+
                 variantId = variant.id;
                 color = variant.color;
             }else if (variantByProduct.has(product.id)){
                 // A product with selectable variants must 
                 // have a selected variant at checkout.
                 throw new Error('Please select a product color.')
+            }else if (item.size !== null){
+                throw new Error('Invalid product size.');
             }
 
             const price = Number(product.price);
@@ -229,8 +254,9 @@ if (error || !user || !user.email) {
             return {
                 productId: product.id,
                 productName: product.name,
-                variantId,
                 color,
+                variantId,
+                size: item.size,
                 quantity: item.quantity,
 
                 // database stores dollars, not cents
@@ -286,8 +312,9 @@ if (error || !user || !user.email) {
                     orderId,
                     productId: item.productId,
                     productName: item.productName,
-                    variantId: item.variantId,
                     color: item.color,
+                    variantId: item.variantId,
+                    size: item.size,
                     quantity: item.quantity,
                     price: item.price,
                 })),

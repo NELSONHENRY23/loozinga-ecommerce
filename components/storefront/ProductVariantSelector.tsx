@@ -13,6 +13,7 @@ type Variant = {
     secureUrl: string;
     position: number;
   } | null;
+  sizes: string[];
 };
 
 type GalleryImage = {
@@ -42,6 +43,8 @@ export default function ProductVariantSelector({
     variants[0]?.id ?? "",
   );
 
+  const [selectedSize, setSelectedSize] = useState("");
+
   const selectedVariant = variants.find(
     (variant) => variant.id === selectedVariantId,
   );
@@ -54,10 +57,17 @@ export default function ProductVariantSelector({
     : legacyImages;
 
   const selectedColor = selectedVariant?.color ?? product.color;
+  const avaialbleSizes = selectedVariant?.sizes ?? [];
+
+  function handleVariantChange(variantId: string){
+    setSelectedVariantId(variantId);
+    setSelectedSize("");
+  }
 
   return (
     <div className="space-y-6">
       {variants.length > 0 && (
+        <>
         <div>
           <h2 className="mb-3 text-sm font-semibold">
             Color: <span className="font-normal">{selectedColor}</span>
@@ -68,7 +78,7 @@ export default function ProductVariantSelector({
               <button
                 key={variant.id}
                 type="button"
-                onClick={() => setSelectedVariantId(variant.id)}
+                onClick={() => handleVariantChange(variant.id)}
                 aria-pressed={selectedVariantId === variant.id}
                 className={`rounded-lg border px-4 py-2 text-sm transition ${
                   selectedVariantId === variant.id
@@ -87,6 +97,41 @@ export default function ProductVariantSelector({
             </p>
           )}
         </div>
+
+        <div>
+          <h2 className="mt-3 text-sm font-semibold">
+            Available Sizes
+          </h2>
+
+          {
+            avaialbleSizes.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {
+                  avaialbleSizes.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setSelectedSize(size)}
+                      aria-pressed={selectedSize === size}
+                      className={`flex h-11 min-w-11 items-center justify-center rounded-lg border px-3 text-sm transition ${
+                        selectedSize === size
+                        ? "border-gray-900 bg-gray-900 text-white"
+                        : "border-gray-300 bg-white hover:border-gray-600"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))
+                }
+              </div>
+            ):(
+              <p className="text-sm text-gray-500">
+              No sizes have been added for this color yet.
+            </p>
+            )
+          }
+        </div>
+        </>
       )}
 
       <ProductGallery
@@ -100,6 +145,7 @@ export default function ProductVariantSelector({
           name: product.name,
           color: selectedColor,
           variantId: selectedVariant?.id ?? null,
+          size: selectedSize || null,
           price: product.price,
           offer: product.offer,
           image: images[0]?.secureUrl ?? null,

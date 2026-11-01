@@ -35,6 +35,7 @@ export default function CheckoutPage() {
         items: items.map((item) => ({
           id: item.id,
           variantId: item.variantId,
+          size: item.size,
           quantity: item.quantity,
         })),
       });
@@ -214,7 +215,7 @@ export default function CheckoutPage() {
 
                   return (
                     <div
-                      key={`${item.id}-${item.variantId ?? item.color}`}
+                      key={`${item.id}-${item.variantId ?? item.color}-${item.size ?? 'no-size'}`}
                       className="flex justify-between gap-4 text-sm"
                     >
                         <div>
@@ -224,6 +225,14 @@ export default function CheckoutPage() {
 
                             Color: {item.color || '-'}
                         </p>
+
+                        {
+                          item.size && (
+                            <p className="mt-1 text-xs text-gray-500">
+                              Size: {item.size}
+                            </p>
+                          )
+                        }
                         </div>
 
                         <span className="font-medium">

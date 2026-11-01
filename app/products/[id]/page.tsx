@@ -1,7 +1,7 @@
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { ArrowLeft } from "lucide-react";
 
 import { db } from "@/app/db";
@@ -10,6 +10,7 @@ import {
   productImages,
   products,
   productVariants,
+  productVariantSizes,
 } from "@/app/db/schema";
 
 import Navbar from "@/components/storefront/Navbar";
@@ -71,6 +72,23 @@ export default async function ProductDetailsPage({
     .where(eq(productVariants.productId, id))
     .orderBy(asc(productVariants.createdAt));
 
+    // Fetch available sizes for the product's color variants.
+    const variantSizes = variants.length > 0 
+      ? await db.select({
+        variantId: productVariantSizes.variantId,
+        size: productVariantSizes.size,
+      })
+      .from(productVariantSizes)
+      .where(
+        inArray(
+          productVariantSizes.variantId,
+          variants.map((variant) => variant.id),
+        ),
+      )
+      .orderBy(asc(productVariantSizes.size))
+      : [];
+      
+
   // Fetch all images once, including their variant associations.
   const productImageResults = await db
     .select({
@@ -93,6 +111,10 @@ export default async function ProductDetailsPage({
       productImageResults.find(
         (image) => image.variantId === variant.id,
       ) ?? null,
+
+      sizes: variantSizes
+        .filter((item) => item.variantId === variant.id)
+        .map((item) => item.size),
   }));
 
   // Keep older, non-variant images working.

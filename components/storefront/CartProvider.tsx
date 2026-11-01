@@ -15,6 +15,7 @@ export type CartItem = {
   name: string;
   color: string;
   variantId: string | null;
+  size: string | null;
   price: number;
   offer: number;
   image: string | null;
@@ -26,10 +27,12 @@ type NewCartItem = Omit<CartItem, "quantity">;
 type CartContextType = {
   items: CartItem[];
   addItem: (product: NewCartItem) => void;
-  removeItem: (id: string, color: string) => void;
+  removeItem: (id: string, color: string, variantId: string | null, size: string | null) => void;
   updateQuantity: (
     id: string,
     color: string,
+    variantId: string | null,
+    size: string | null,
     quantity: number,
   ) => void;
   clearCart: () => void;
@@ -48,8 +51,9 @@ export function getCartkey(
   id: string,
   color: string,
   variantId?: string | null,
+  size?: string | null,
 ) {
-  return JSON.stringify([id, variantId ?? color]);
+  return JSON.stringify([id, variantId ?? color, size ?? null]);
 }
 
 // Read saved cart data and support older items without variantId.
@@ -89,7 +93,11 @@ function getSavedCart(): CartItem[] {
           item.quantity <= MAX_QUANTITY &&
           (item.variantId === undefined ||
             item.variantId === null ||
-            typeof item.variantId === "string"),
+            typeof item.variantId === "string")&&
+          (item.size === undefined ||
+            item.size === null ||
+            typeof item.size === "string")
+          
       )
       .map(
         (item): CartItem => ({
@@ -99,6 +107,9 @@ function getSavedCart(): CartItem[] {
           variantId:
             typeof item.variantId === "string"
               ? item.variantId
+              : null,
+              size: typeof item.size === "string"
+              ? item.size
               : null,
           price: item.price as number,
           offer: item.offer as number,
@@ -143,23 +154,25 @@ export function CartProvider({
 
   function addItem(product: NewCartItem) {
     if (!product.color.trim()) return;
+    if(product.variantId && !product.size) return;
 
     setItems((previous) => {
       const productKey = getCartkey(
         product.id,
         product.color,
         product.variantId,
+        product.size,
       );
 
       const existing = previous.find(
         (item) =>
-          getCartkey(item.id, item.color, item.variantId) ===
+          getCartkey(item.id, item.color, item.variantId, item.size) ===
           productKey,
       );
 
       if (existing) {
         return previous.map((item) =>
-          getCartkey(item.id, item.color, item.variantId) ===
+          getCartkey(item.id, item.color, item.variantId, item.size) ===
           productKey
             ? {
                 ...item,
@@ -182,10 +195,12 @@ export function CartProvider({
     });
   }
 
-  function removeItem(id: string, color: string) {
+  function removeItem(id: string, color: string, variantId: string | null, size: string | null) {
+    const productKey = getCartkey(id, color, variantId, size);
+
     setItems((previous) =>
       previous.filter(
-        (item) => !(item.id === id && item.color === color),
+        (item) => getCartkey(item.id, item.color, item.variantId, item.size) !== productKey,
       ),
     );
   }
@@ -193,18 +208,22 @@ export function CartProvider({
   function updateQuantity(
     id: string,
     color: string,
+    variantId: string | null,
+    size: string | null,
     quantity: number,
   ) {
     if (!Number.isInteger(quantity)) return;
 
     if (quantity <= 0) {
-      removeItem(id, color);
+      removeItem(id, color, variantId, size);
       return;
     }
 
+    const productKey = getCartkey(id, color, variantId, size);
+
     setItems((previous) =>
       previous.map((item) =>
-        item.id === id && item.color === color
+        getCartkey(item.id, item.color, item.variantId, item.size) === productKey
           ? {
               ...item,
               quantity: Math.min(quantity, MAX_QUANTITY),

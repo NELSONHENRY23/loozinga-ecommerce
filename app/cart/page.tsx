@@ -55,7 +55,7 @@ export default function CartPage(){
 
                 return (
                   <div
-                    key={`${item.id}-${item.color}`}
+                    key={`${item.id}-${item.variantId ?? item.color}-${item.size ?? "no-size"}`}
                     className="flex flex-col gap-5 rounded-xl bg-white p-5 shadow-sm sm:flex-row"
                   >
                     <Link
@@ -90,6 +90,14 @@ export default function CartPage(){
                           Color: {item.color}
                         </p>
 
+                        {
+                          item.size && (
+                            <p className="mt-1 text-sm text-gray-500">
+                              Size: {item.size}
+                            </p>
+                          )
+                        }
+
                         <p className="mt-2 font-bold">
                           ${unitPrice.toFixed(2)}
                         </p>
@@ -104,6 +112,8 @@ export default function CartPage(){
                               updateQuantity(
                                 item.id,
                                 item.color,
+                                item.variantId,
+                                item.size,
                                 item.quantity - 1,
                               )
                             }
@@ -124,6 +134,8 @@ export default function CartPage(){
                               updateQuantity(
                                 item.id,
                                 item.color,
+                                item.variantId,
+                                item.size,
                                 item.quantity + 1,
                               )
                             }
@@ -135,7 +147,7 @@ export default function CartPage(){
 
                         <button
                           type="button"
-                          onClick={() => removeItem(item.id, item.color)}
+                          onClick={() => removeItem(item.id, item.color, item.variantId, item.size)}
                           className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800"
                         >
                           <Trash2 size={17} />

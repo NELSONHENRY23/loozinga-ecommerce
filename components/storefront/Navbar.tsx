@@ -37,6 +37,13 @@ export default function Navbar(){
                       Home
                    </Link>
 
+                   <Link
+                      href="/shop"
+                      className="text-sm font-medium text-gray-700 hover:text-black"
+                    >
+                      Shop
+                    </Link>
+                    
                    <Link 
                      href="/account"
                      className="text-sm font-medium text-gray-700 hover:text-black"
@@ -108,7 +115,7 @@ export default function Navbar(){
             </Link>
 
             <Link
-              href="/#products"
+              href="/shop"
               onClick={closeMenu}
               className="rounded-md px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-black"
             >

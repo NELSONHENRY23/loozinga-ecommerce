@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/app/db";
@@ -65,11 +66,23 @@ export default async function HomePage(){
           id="products"
           className="mx-auto max-w-7xl px-5 py-14"
         >
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold">Latest Products</h2>
-            
-            <p className="mt-2 text-gray-500">Discover the latest additions to our store.</p>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold">New Arrivals</h2>
+
+            <p className="mt-2 text-gray-500">
+              Discover the latest additions to our store.
+            </p>
           </div>
+
+          <Link 
+            href="/shop"
+            className="text-sm font-semibold text-gray-900 underline underline-offset-4 hover:text-gray-600"
+          >
+            View All Products
+          </Link>
+        </div>
+
           {
             productList.length === 0 ? (
               <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center">

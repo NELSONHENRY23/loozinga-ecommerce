@@ -1,7 +1,7 @@
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, and, desc, eq, inArray, ne } from "drizzle-orm";
 import { ArrowLeft } from "lucide-react";
 
 import { db } from "@/app/db";
@@ -13,8 +13,10 @@ import {
   productVariantSizes,
 } from "@/app/db/schema";
 
-import Navbar from "@/components/storefront/Navbar";
 import ProductVariantSelector from "@/components/storefront/ProductVariantSelector";
+import Navbar from "@/components/storefront/Navbar";
+import Footer from "@/components/storefront/Footer";
+import ProductCard from "@/components/storefront/ProductCard";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,7 @@ export default async function ProductDetailsPage({
       price: products.price,
       offer: products.offer,
       color: products.color,
+      categoryId: products.categoryId,
       categoryName: categories.name,
     })
     .from(products)
@@ -61,6 +64,37 @@ export default async function ProductDetailsPage({
   if (!product) {
     notFound();
   }
+
+  // Fetch related products
+  const relatedProducts = await db.select({
+      id: products.id,
+      name: products.name,
+      price: products.price,
+      offer: products.offer,
+      categoryName: categories.name,
+      mainImage: productImages.secureUrl,
+  })
+  .from(products)
+  .innerJoin(
+    categories,
+    eq(products.categoryId, categories.id),
+  )
+  .leftJoin(
+    productImages,
+    and(
+      eq(productImages.productId, products.id),
+      eq(productImages.position, 0),
+    ),
+  )
+  .where(
+    and(
+      eq(products.categoryId, product.categoryId),
+      ne(products.id, id),
+      eq(categories.status, "Active"),
+    )
+  )
+  .orderBy(desc(products.createdAt))
+  .limit(4);
 
   // Fetch the product's available color variants.
   const variants = await db
@@ -236,7 +270,33 @@ export default async function ProductDetailsPage({
             </div>
           </div>
         </div>
+
+        {relatedProducts.length > 0 && (
+          <section className="mt-16">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold">
+                You May Also Like
+              </h2>
+
+              <p className="mt-2 text-gray-500">
+                Explore more products from this collection.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {
+                relatedProducts.map((relatedProduct) => (
+                  <ProductCard
+                    key={relatedProduct.id}
+                    product={relatedProduct}
+                  />
+                ))
+              }
+            </div>
+          </section>
+        )}
       </main>
+      <Footer/>
     </div>
   );
 }

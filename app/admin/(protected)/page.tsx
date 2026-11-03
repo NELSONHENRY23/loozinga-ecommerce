@@ -221,53 +221,6 @@ export default async function AdminDashboardPage() {
     },
   ];
   
-/*
-```
-
-You can remove `FlaskConical` from your Lucide imports.
-
-Keep the existing database filtering that excludes `TEST-` orders from financial figures until we clean them up.
-
-### Update the card layout
-
-Change:
-
-```tsx
-<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-```
-
-to:
-
-```tsx
-<div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-```
-
-Apply this change **only to the Sales Overview section**, not the four main dashboard statistic cards.
-
-You can also remove the `testResult` query, `testOrderValue`, and `testOrderCount` variables, since they will no longer be displayed. Keep the test-order filtering on the financial queries.
-
-## 3. When should we delete test orders?
-
-I recommend deleting them immediately before production release, after checkout, payment status, and order-management testing are complete.
-
-We should then:
-
-- Delete the `TEST-NELSON-001` and `TEST-NELSON-002` orders and their related items.
-- Preserve actual customer accounts and legitimate order records.
-- Verify the dashboard statistics again.
-- Keep future test transactions in a separate development or staging database.
-
-Your existing `order_items` foreign key supports cascading deletion when its parent order is removed.
-
-## 4. Charts can wait
-
-Agreed. We'll add analytical charts after completing the core e-commerce system.
-
-That way, charts will be based on actual checkout transactions rather than artificial test data. We can eventually add monthly revenue, order trends, product performance, and customer activity.
-
-**For now, let's retain Gross Order Value, Paid Revenue, and Outstanding Payments, hide Test Transactions from the dashboard, and keep the two test orders until we're ready for production.**
-*/
- 
 
 return (
     <div className="p-4">
@@ -295,7 +248,6 @@ return (
           ))}
         </div>
 
-        {/* Sales Overview */}
         {/* Sales Overview */}
 <section className="mt-7">
   <h2 className="mb-4 text-lg font-semibold text-gray-700">

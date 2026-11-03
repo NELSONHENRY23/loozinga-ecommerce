@@ -65,12 +65,12 @@ export default async function ProductVariantsPage({params,}:Props) {
     const variantWithSizes = Array.from(
       // Group repeated variant Ids and collect sizes.
       variants.reduce((grouped, row) => {
-        const exisiting = grouped.get(row.id);
+        const existing = grouped.get(row.id);
 
-        if(exisiting){
+        if(existing){
     
           if(row.size !== null){
-            exisiting.sizes.push(row.size);
+            existing.sizes.push(row.size);
           }
 
         }
@@ -111,6 +111,14 @@ export default async function ProductVariantsPage({params,}:Props) {
         </div>
 
         <ProductVariantsForm productId={product.id} variants={variantWithSizes}/>
+        <div className="mt-6 flex justify-end">
+    <Link
+      href={`/admin/products/${product.id}/images`}
+      className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+    >
+      Manage Product Images
+    </Link>
+  </div>
         </div>
     )
 }

@@ -148,7 +148,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     if (search) query.set('q', search);
     if (categoryId) query.set('category', String(categoryId));
     if (minPrice !== undefined) {
-      query.set('minPrice', String(maxPrice));
+      query.set('minPrice', String(minPrice));
     }
     if (maxPrice !== undefined) {
       query.set('maxPrice', String(maxPrice));
@@ -163,7 +163,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Navbar />
 
-      <main className="max-auto max-w-7xl px-5 py-10">
+      <main className="mx-auto max-w-7xl px-5 py-10">
         <div className="mb-8">
           <p className="text-sm font-medium uppercase tracking-widest text-gray-500">
             Explore Loozinga
@@ -181,7 +181,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
             className="mb-8 rounded-xl border border-gray-200 bg-white p-5"
           >
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="lg: col-span-2">
+              <div className="lg:col-span-2">
                 <label
                   htmlFor="shop-search"
                   className="mb-2 block text-sm font-medium"
@@ -265,7 +265,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
               </div>
             </div>
 
-            <div className="mt-5 flex flex-warp items-center gap-3">
+            <div className="mt-5 flex flex-wrap items-center gap-3">
               <button
                 type="submit"
                 className="rounded-lg bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-700"
@@ -285,7 +285,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
           {/* Results */}
           <div className="mb-5 flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              Showing {productList.length} of {totalPages} products
+              Showing {productList.length} of {totalProducts} products
             </p>
           </div>
 
@@ -310,7 +310,11 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                 <ProductCard key={product.id} product={product} />
               ))}
 
-              {/* Pagination */}
+              
+            </div>
+          )}
+
+{/* Pagination */}
               {totalPages > 1 && (
                 <div className="mt-10 flex items-center justify-center gap-4">
                   {currentPage > 1 && (
@@ -336,8 +340,6 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                   )}
                 </div>
               )}
-            </div>
-          )}
         </div>
       </main>
 

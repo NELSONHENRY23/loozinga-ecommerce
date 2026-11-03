@@ -14,6 +14,7 @@ import { orderItems, orders } from '@/app/db/schema';
 
 import OrderStatusForm from '@/components/admin/OrderStatus';
 import PaymentStatusForm from '@/components/admin/PaymentStatusForm';
+import { requireAdmin } from '@/utils/superbase/require-admin';
 
 type OrderDetailsPageProps = {
   params: Promise<{
@@ -24,7 +25,18 @@ type OrderDetailsPageProps = {
 export default async function OrderDetailsPage({
   params,
 }: OrderDetailsPageProps) {
+  await requireAdmin();
+
   const { id } = await params;
+
+  
+  // Validate the product ID
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (!uuidPattern.test(id)) {
+    notFound();
+  }
 
   // Get the order 
   const orderResult = await db.select().from(orders).where(eq(orders.id, id)).limit(1);

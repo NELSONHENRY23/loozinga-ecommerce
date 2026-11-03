@@ -6,6 +6,7 @@ import { db } from '@/app/db';
 import { orders, profiles } from '@/app/db/schema';
 import { createAdminClient } from '@/utils/superbase/admin';
 import Pagination from '@/components/admin/Pagination';
+import { isUserBlocked } from '@/utils/superbase/user-status';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,7 +102,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
       joinedDate: authUser.created_at,
       totalOrders: Number(stats?.totalOrders ?? 0),
       totalSpent: Number(stats?.totalSpent ?? 0),
-      status: authUser.banned_until ? 'Blocked' : 'Active',
+      status: isUserBlocked(authUser.banned_until) ? 'Blocked' : 'Active',
     };
   });
 

@@ -92,8 +92,8 @@ export default function CheckoutPage() {
                   id="customerName"
                   name="customerName"
                   required
-                  min={2}
-                  max={150}
+                  minLength={2}
+                  maxLength={150}
                   autoComplete="name"
                   className="form-input"
                 />
@@ -111,8 +111,8 @@ export default function CheckoutPage() {
                   id="phone"
                   name="phone"
                   required
-                  min={5}
-                  max={50}
+                  minLength={5}
+                  maxLength={50}
                   autoComplete="tel"
                   className="form-input"
                 />
@@ -130,14 +130,14 @@ export default function CheckoutPage() {
                   id="street"
                   name="street"
                   required
-                  min={5}
-                  max={250}
+                  minLength={5}
+                  maxLength={250}
                   autoComplete="street-address"
                   className="form-input"
                 />
               </div>
 
-              <div className="grid gap-4 sm: grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label
                     htmlFor="city"
@@ -150,8 +150,8 @@ export default function CheckoutPage() {
                     id="city"
                     name="city"
                     required
-                    min={2}
-                    max={100}
+                    minLength={2}
+                    maxLength={100}
                     autoComplete="address-level2"
                     className="form-input"
                   />
@@ -169,8 +169,8 @@ export default function CheckoutPage() {
                     id="country"
                     name="country"
                     required
-                    min={2}
-                    max={100}
+                    minLength={2}
+                    maxLength={100}
                     autoComplete="country-name"
                     className="form-input"
                   />

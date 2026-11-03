@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
-import { uuid, z } from 'zod';
+import { z } from 'zod';
 
 import { db } from '@/app/db';
 import { productImages, productVariants } from '@/app/db/schema';
@@ -17,7 +17,7 @@ const imageSchema = z.object({
 });
 
 const saveVariantImageSchema = z.object({
-  productId: uuid(),
+  productId: z.uuid(),
   variantId: z.uuid(),
   secureUrl: z.url(),
   publicId: z.string().min(1),
@@ -43,6 +43,9 @@ const deleteImageSchema = z.object({
   productId: z.string().uuid(),
   position: z.number().int().min(0).max(4),
 });
+
+// Maximum number of image slots (one per color) for a single product.
+const MAX_IMAGES_PER_PRODUCT = 30;
 
 // Get existing image else Update or Create the Image
 export async function saveProductImages(
@@ -435,17 +438,19 @@ export async function saveVariantImage(input: unknown) {
       const used = new Set(
         usedPositions.map((image) => image.position),
       );
-      
+
+      // Find the first free slot.
       let position = 0;
       while (used.has(position)) {
         position += 1;
       }
 
-      if (position === undefined) {
+      // Reject when all slots are taken. The finally block below
+      // removes the newly uploaded Cloudinary asset.
+      if (position >= MAX_IMAGES_PER_PRODUCT) {
         return {
           success: false,
-          message:
-            'No free image slot is available. Existing images were preserved.',
+          message: `A product can have at most ${MAX_IMAGES_PER_PRODUCT} images.`,
         };
       }
 

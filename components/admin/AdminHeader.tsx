@@ -10,9 +10,10 @@ import {
 
 type AdminHeaderProps = {
     onMenuClick: () => void;
+    adminName: string;
 }
 
-export default function AdminHeader({onMenuClick}:AdminHeaderProps) {
+export default function AdminHeader({onMenuClick, adminName}:AdminHeaderProps) {
   return (
     <header className='fixed left-0 right-0 top-0 z-50 h-15 bg-[#36424a] text-white shadow'>
         <div className='flex h-full items-center'>
@@ -61,7 +62,7 @@ export default function AdminHeader({onMenuClick}:AdminHeaderProps) {
                         <User size={19}/>
                     </div>
 
-                    <span className='hidden text-sm font-medium text-gray-200 md:inline'>Nelson Henry</span>
+                    <span className='hidden text-sm font-medium text-gray-200 md:inline'>{adminName}</span>
                 </div>
 
             </div>

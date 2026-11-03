@@ -21,7 +21,6 @@ type ProductFormData = {
   price: string;
   offer: string;
   categoryId: string;
-  color: string;
 };
 
 const initialFormData: ProductFormData = {
@@ -30,7 +29,6 @@ const initialFormData: ProductFormData = {
   price: '',
   offer: '0',
   categoryId: '',
-  color: '',
 };
 
 export default function ProductForm({ categories }: ProductFormProps) {
@@ -59,14 +57,13 @@ export default function ProductForm({ categories }: ProductFormProps) {
     setError('');
 
     startTransition(async () => {
-      // create the database for product first
+      // create the product before managing its variants.
       const result = await createProduct({
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: Number(formData.price),
         offer: formData.offer === '' ? 0 : Number(formData.offer),
         categoryId: Number(formData.categoryId),
-        color: formData.color.trim(),
       });
 
       if (!result.success) {
@@ -77,8 +74,8 @@ export default function ProductForm({ categories }: ProductFormProps) {
       // At this point PostgreSql has generated the UUID
       const productId = result.productId;
 
-      // route to edit product images
-      router.push(`/admin/products/${productId}/images`);
+      // Redirect to manage product colors and sizes.
+      router.push(`/admin/products/${productId}/variants`);
     });
   }
 
@@ -139,7 +136,7 @@ export default function ProductForm({ categories }: ProductFormProps) {
             <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
               <FormField label="Price" required>
                 <div className="relative">
-                  <span className="absolute left-3 top1/2 -translate-y-1/2 text-gray-400">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                     $
                   </span>
 
@@ -204,18 +201,6 @@ export default function ProductForm({ categories }: ProductFormProps) {
                     </option>
                   ))}
                 </select>
-              </FormField>
-
-              <FormField label="Color" required>
-                <input
-                  type="text"
-                  name="color"
-                  value={formData.color}
-                  onChange={handleChange}
-                  placeholder="e.g. Black"
-                  required
-                  className="form-input"
-                />
               </FormField>
             </div>
           </section>

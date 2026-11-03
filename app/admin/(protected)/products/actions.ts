@@ -41,6 +41,19 @@ const productSchema = z.object({
     .int()
     .positive(),
 });
+const updateProductSchema = productSchema.omit({
+  color: true,
+});
+
+const createProductSchema = productSchema.omit({
+  color: true,
+});
+
+export type UpdateProductInput = z.infer<
+  typeof updateProductSchema
+>;
+
+export type CreateProductInput = z.infer<typeof createProductSchema>;
 
 export type ProductInput = z.infer<typeof productSchema>;
 
@@ -68,12 +81,12 @@ type UpdateProductResult =
 /* CREATE PRODUCT */
 
 export async function createProduct(
-  input: ProductInput,
+  input: CreateProductInput,
 ): Promise<CreateProductResult> {
   // verify administrator before performing any database work
       await requireAdmin();
   
-  const parsed = productSchema.safeParse(input);
+  const parsed = createProductSchema.safeParse(input);
 
   if (!parsed.success) {
     return {
@@ -92,7 +105,7 @@ export async function createProduct(
         description: parsed.data.description,
         price: parsed.data.price,
         offer: parsed.data.offer,
-        color: parsed.data.color,
+        color: '',
         categoryId: parsed.data.categoryId,
       })
       .returning({
@@ -127,7 +140,7 @@ export async function createProduct(
 
 export async function updateProduct(
   productId: string,
-  input: ProductInput,
+  input: UpdateProductInput,
 ): Promise<UpdateProductResult> {
   // verify administrator before performing any database work
       await requireAdmin();
@@ -143,7 +156,7 @@ export async function updateProduct(
     };
   }
 
-  const parsed = productSchema.safeParse(input);
+  const parsed = updateProductSchema.safeParse(input);
 
   if (!parsed.success) {
     return {
@@ -162,8 +175,8 @@ export async function updateProduct(
         description: parsed.data.description,
         price: parsed.data.price,
         offer: parsed.data.offer,
-        color: parsed.data.color,
         categoryId: parsed.data.categoryId,
+        updatedAt: new Date(),
       })
       .where(eq(products.id, parsedId.data))
       .returning({
@@ -180,7 +193,7 @@ export async function updateProduct(
     revalidatePath('/admin/products');
     revalidatePath(`/admin/products/${productId}/edit`);
     revalidatePath(`/admin/products/${productId}/images`);
-
+    revalidatePath(`/products/${parsedId.data}`);
     return {
       success: true,
       message: 'Product updated successfully.',

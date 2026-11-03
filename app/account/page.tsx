@@ -37,7 +37,7 @@ export default async function CustomerAccountPage() {
     await supabase.auth.signOut();
 
     redirect(
-      `account/login?error=${encodeURIComponent('Unable to verify your account. Please sign in again.')}`
+      `/account/login?error=${encodeURIComponent('Unable to verify your account. Please sign in again.')}`
     )
   }
 

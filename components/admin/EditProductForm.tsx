@@ -13,7 +13,6 @@ type Product = {
   description: string | null;
   price: number;
   offer: number | null;
-  color: string | null;
   categoryId: number | null;
 };
 
@@ -42,7 +41,6 @@ export default function EditProductForm({
     description: product.description ?? '',
     price: String(product.price),
     offer: String(product.offer ?? 0),
-    color: product.color ?? '',
     categoryId: product.categoryId ? String(product.categoryId) : '',
   });
 
@@ -71,8 +69,6 @@ export default function EditProductForm({
           price: Number(formData.price),
 
           offer: Number(formData.offer || 0),
-
-          color: formData.color,
 
           categoryId: Number(formData.categoryId),
         });
@@ -198,23 +194,6 @@ export default function EditProductForm({
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Color */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Color
-            </label>
-
-            <input
-              type="text"
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-              required
-              disabled={isPending}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
-            />
           </div>
 
           {/* Offer */}

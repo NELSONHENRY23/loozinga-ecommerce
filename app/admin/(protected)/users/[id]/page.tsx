@@ -16,6 +16,7 @@ import { db } from '@/app/db';
 import { orders, profiles } from '@/app/db/schema';
 import { createAdminClient } from '@/utils/superbase/admin';
 import CustomerBlockButton from '@/components/admin/CustomerBlockButton';
+import { isUserBlocked } from '@/utils/superbase/user-status';
 
 type UserDetailsPageProps = {
   params: Promise<{
@@ -78,12 +79,9 @@ export default async function UserDetailsPage({
 
   const role = profile?.role ?? 'User';
 
-  const bannedUntil = authUser.banned_until
-  ? new Date(authUser.banned_until).getTime()
-  : 0;
-
-  const isBlocked = bannedUntil > new Date().getTime();
-
+  
+  const isBlocked =  isUserBlocked(authUser.banned_until);
+  
   const status = isBlocked ? 'Blocked' : 'Active';
 
   const totalOrders = Number(orderStats?.totalOrders ?? 0);

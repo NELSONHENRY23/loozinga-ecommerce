@@ -1,9 +1,10 @@
-import { asc, eq } from "drizzle-orm";
-import Link from "next/link";
+import { asc, eq } from 'drizzle-orm';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
-import { db } from "@/app/db";
-import { products, productImages, productVariants } from "@/app/db/schema";
-import ProductImagesForm from "@/components/admin/ProductImagesForm";
+import { db } from '@/app/db';
+import { products, productImages, productVariants } from '@/app/db/schema';
+import ProductImagesForm from '@/components/admin/ProductImagesForm';
 
 export default async function EditProductImagesPage({
   params,
@@ -11,13 +12,22 @@ export default async function EditProductImagesPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  
+
+  // Validate the product ID
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (!uuidPattern.test(id)) {
+    notFound();
+  }
+
   /*
    Product and images do not depend
    on each other, so load both together.
   */
   const [productResult, variants, images] = await Promise.all([
-    db.select({
+    db
+      .select({
         id: products.id,
         name: products.name,
       })
@@ -25,16 +35,17 @@ export default async function EditProductImagesPage({
       .where(eq(products.id, id))
       .limit(1),
 
-      db
-    .select({
-      id: productVariants.id,
-      color: productVariants.color,
-    })
-    .from(productVariants)
-    .where(eq(productVariants.productId, id))
-    .orderBy(asc(productVariants.color)),
+    db
+      .select({
+        id: productVariants.id,
+        color: productVariants.color,
+      })
+      .from(productVariants)
+      .where(eq(productVariants.productId, id))
+      .orderBy(asc(productVariants.color)),
 
-      db.select({
+    db
+      .select({
         id: productImages.id,
         variantId: productImages.variantId,
         position: productImages.position,
@@ -42,24 +53,16 @@ export default async function EditProductImagesPage({
         createdAt: productImages.createdAt,
       })
       .from(productImages)
-      .where(
-        eq(
-          productImages.productId, id
-        )
-      )
-      .orderBy(
-        asc(productImages.position),
-      )
-    ]);
+      .where(eq(productImages.productId, id))
+      .orderBy(asc(productImages.position)),
+  ]);
 
-    const product = productResult[0];
+  const product = productResult[0];
 
-    const variantsWithImages = variants.map((variant) => ({
-      ...variant,
-      image:
-        images.find((image) => image.variantId === variant.id) ?? null,
-    }));
-
+  const variantsWithImages = variants.map((variant) => ({
+    ...variant,
+    image: images.find((image) => image.variantId === variant.id) ?? null,
+  }));
 
   if (!product) {
     return (
@@ -83,10 +86,5 @@ export default async function EditProductImagesPage({
       </div>
     );
   }
-  return (
-    <ProductImagesForm
-      product={product}
-      variants={variantsWithImages}
-    />
-  );
+  return <ProductImagesForm product={product} variants={variantsWithImages} />;
 }

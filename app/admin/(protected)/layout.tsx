@@ -21,7 +21,7 @@ export default async function ProtectedAdminLayout({children,}:Readonly<{childre
 
   // Read the trusted role from Supabase database
   const [profile] = await db
-    .select({ role: profiles.role })
+    .select({ name: profiles.name, role: profiles.role })
     .from(profiles)
     .where(eq(profiles.id, user.id))
     .limit(1);
@@ -31,5 +31,5 @@ export default async function ProtectedAdminLayout({children,}:Readonly<{childre
     redirect('/account');
   }
 
-    return <AdminShell>{children}</AdminShell>
+    return <AdminShell adminName={profile?.name ?? 'Admin'}>{children}</AdminShell>
 }

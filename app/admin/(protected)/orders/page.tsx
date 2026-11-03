@@ -5,6 +5,7 @@ import { and, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { db } from '@/app/db';
 import { orders } from '@/app/db/schema';
 import Pagination from '@/components/admin/Pagination';
+import { requireAdmin } from '@/utils/superbase/require-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,7 @@ type OrdersPageProps = {
 const pageSize = 10;
 
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
+  await requireAdmin();
   // Read current page from URL
   const params = await searchParams;
 

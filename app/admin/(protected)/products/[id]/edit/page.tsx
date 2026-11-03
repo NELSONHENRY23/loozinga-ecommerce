@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { db } from '@/app/db';
 import { products, categories } from '@/app/db/schema';
 import EditProductForm from '@/components/admin/EditProductForm';
+import { notFound } from 'next/navigation';
 
 
 export default async function EditProductPage({
@@ -13,6 +14,15 @@ export default async function EditProductPage({
 }) {
   const { id } = await params;
 
+  
+    // Validate the product ID
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  
+    if (!uuidPattern.test(id)) {
+      notFound();
+    }
+    
   const [product] = await db
     .select({
       id: products.id,

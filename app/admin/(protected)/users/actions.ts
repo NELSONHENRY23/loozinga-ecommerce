@@ -55,7 +55,7 @@ export async function setCustomerBlocked(targetUserId:string, shouldBlock: boole
     if(targetUserId === user.id){
         return{
             success: false,
-            message: 'You cannot block your ow account.'
+            message: 'You cannot block your own account.'
         }
     }
 

@@ -7,6 +7,7 @@ import {
     varchar,
     integer,
     numeric,
+    index,
     uniqueIndex,
     text,
 } from 'drizzle-orm/pg-core';
@@ -110,12 +111,15 @@ export const paymentStatusEnum = pgEnum('payment_status',[
     'Pending',
 ])
 
-export const orderStatusEnum = pgEnum('order_status', [
+export const orderStatusValues = [
     'Processing',
     'Shipped',
     'Delivered',
     'Cancelled',
-])
+] as const;
+
+export const orderStatusEnum = pgEnum('order_status', orderStatusValues);
+export type OrderStatus = typeof orderStatusValues[number];
 
 export const orders = pgTable('orders',{
     id: uuid('id').defaultRandom().primaryKey(),
@@ -133,8 +137,9 @@ export const orders = pgTable('orders',{
     orderStatus: orderStatusEnum('order_status').notNull().default('Processing'),
     createdAt: timestamp('created_at', {withTimezone:true}).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', {withTimezone:true}).defaultNow().notNull(),
-
-})
+}, (table) => [
+    index('orders_user_id_idx').on(table.userId),
+])
 
 export const orderItems = pgTable('order_items', {
     id: uuid('id').defaultRandom().primaryKey(),
@@ -155,7 +160,6 @@ export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type NewOrderItem = typeof orderItems.$inferInsert;
 
-export type OrderStatus = Order['orderStatus'];
 export type PaymentStatus = Order['paymentStatus'];
 export type PaymentMethod = Order['paymentMethod'];
 

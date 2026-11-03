@@ -46,11 +46,11 @@ export async function uploadCloudinaryImage(
   }
   
   // Optional: Enable an upload size limit if required.
-  //const maxFileSize = 5 * 1024 * 1024;
-  //
-  //if (file.size > maxFileSize) {
-  //  throw new Error('Image size must not exceed 5 MB.');
- // }
+  const maxFileSize = 10 * 1024 * 1024;
+  
+  if (file.size > maxFileSize) {
+   throw new Error('Image size must not exceed 10 MB.');
+ }
   
  // Debugging: Log the selected file's details for verification.
   // console.info('Selected image:', {
@@ -124,11 +124,20 @@ export async function uploadCloudinaryImage(
 //   throw new Error('The upload payload contains an empty file.');
 // }
       // Upload directly from browser
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,{
-        method: 'POST',
-        body: formData,
-      },
-    );
+      let response: Response;
+
+      try {
+        response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,{
+          method: 'POST',
+          body: formData,
+        },
+      );
+      } catch {
+        throw new Error(
+          'Could not reach Cloudinary. Check your connection and try again.',
+        );
+      }
+     
 
     const result = (await response.json()) as CloudinaryUploadResponse;
     

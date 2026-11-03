@@ -22,6 +22,7 @@ const pageSize = 10;
 
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   await requireAdmin();
+
   // Read current page from URL
   const params = await searchParams;
 

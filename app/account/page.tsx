@@ -4,57 +4,17 @@ import { eq } from 'drizzle-orm';
 
 import { db } from '@/app/db';
 import { profiles } from '@/app/db/schema';
-import { createClient } from '@/utils/superbase/server';
+import { requireActiveCustomer } from '@/utils/superbase/require-active-customer';
 import { logoutCustomer } from './logout/actions';
 import { LogOut } from 'lucide-react';
-import { createAdminClient } from '@/utils/superbase/admin';
 
 export const dynamic = 'force-dynamic';
 
-function getCurrentTime() {
-  return Date.now();
-}
-
 export default async function CustomerAccountPage() {
-  const supabase = await createClient();
+  const user = await requireActiveCustomer();
 
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user || !user.email) {
+  if (!user.email) {
     redirect('/account/login');
-  }
-
-  // Check whether the authnticated customer has been blocked.
-  const adminSupabase = createAdminClient();
-
-  const {data: {user: authUser}, error: adminError,} = await adminSupabase.auth.admin.getUserById(user.id);
-
-  // Fail closed if the account status cannot be verified.
-  if(adminError || !authUser){
-    await supabase.auth.signOut();
-
-    redirect(
-      `/account/login?error=${encodeURIComponent('Unable to verify your account. Please sign in again.')}`
-    )
-  }
-
-  const bannedUntil = authUser.banned_until
-    ? new Date(authUser.banned_until).getTime()
-    : 0;
-
-  const isBlocked = bannedUntil > getCurrentTime();
-
-  if (isBlocked) {
-    await supabase.auth.signOut();
-
-    redirect(
-      `/account/login?error=${encodeURIComponent(
-          'Your account is blocked. Please contact support for assistance.'
-      )}`
-  );
   }
 
   // Retrieve the customer's profile.
@@ -67,7 +27,7 @@ export default async function CustomerAccountPage() {
     .where(eq(profiles.id, user.id))
     .limit(1);
 
-    // Customers must not access the customer account page as administrators.
+  // Customers must not access the customer account page as administrators.
   if (profile?.role !== 'Customer') {
     redirect('/admin/login');
   }
@@ -89,6 +49,13 @@ export default async function CustomerAccountPage() {
             className="text-sm font-medium text-blue-500 hover:underline"
           >
             Back to Home
+          </Link>
+
+          <Link
+            href="/account/orders"
+            className="text-sm font-medium text-blue-500 hover:underline"
+          >
+            My Orders
           </Link>
 
           <form action={logoutCustomer}>

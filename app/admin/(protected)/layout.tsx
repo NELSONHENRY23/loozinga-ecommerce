@@ -9,13 +9,11 @@ import { createClient } from '@/utils/superbase/server';
 export default async function ProtectedAdminLayout({children,}:Readonly<{children: React.ReactNode}>){
     const supabase = await createClient();
 
-  // Verify the currently signed-in user
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  // Verify the signed JWT without a separate Auth API request.
+  const {data, error} = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub;
 
-  if (error || !user) {
+  if (error || typeof userId !== 'string') {
     redirect('/admin/login');
   }
 
@@ -23,7 +21,7 @@ export default async function ProtectedAdminLayout({children,}:Readonly<{childre
   const [profile] = await db
     .select({ name: profiles.name, role: profiles.role })
     .from(profiles)
-    .where(eq(profiles.id, user.id))
+    .where(eq(profiles.id, userId))
     .limit(1);
 
   // Non-admin users cannot access admin pages

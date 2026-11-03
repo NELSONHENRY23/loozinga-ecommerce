@@ -46,9 +46,9 @@ export default async function OrderSuccessPage({ params }: Props) {
     .where(and(eq(orders.id, id), eq(orders.userId, user.id)))
     .limit(1);
 
-    if(!order){
-      notFound();
-    }
+  if (!order) {
+    notFound();
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -91,12 +91,20 @@ export default async function OrderSuccessPage({ params }: Props) {
             </div>
           </div>
 
-          <Link
-            href="/"
-            className="mt-8 inline-block rounded-lg bg-gray-900 px-6 py-3 font-semibold text-white hover:bg-gray-700"
-          >
-            Continue Shopping
-          </Link>
+          <div className="flex justify-center gap-3">
+            <Link
+              href={`/account/orders/${id}`}
+              className="mt-8 inline-block rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-900 hover:bg-gray-50"
+            >
+              View Order
+            </Link>
+            <Link
+              href="/"
+              className="mt-8 inline-block rounded-lg bg-gray-900 px-6 py-3 font-semibold text-white hover:bg-gray-700"
+            >
+              Continue Shopping
+            </Link>
+          </div>
         </div>
       </main>
     </div>

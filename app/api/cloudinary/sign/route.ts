@@ -16,7 +16,6 @@ export async function POST(
   request: Request,
 ) {
  // Protect privileged upload-signing credentials.
-
  try{
   await requireAdmin();
  }catch{

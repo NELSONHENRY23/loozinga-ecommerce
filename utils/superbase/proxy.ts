@@ -77,7 +77,8 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
     // keep supabase session verification.
     const {data, error,} = await supabase.auth.getClaims();
   
-    const isAuthenticated = !error && Boolean(data?.claims);
+    const userId = data?.claims?.sub;
+    const isAuthenticated = !error && typeof userId === 'string';
 
 // Unauthorized visitors are redirected to login.
     // Not logged in:
@@ -91,9 +92,18 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
         const response = NextResponse.redirect(url);
 
         // Preserve any refreshed session cookies.
-        supabaseResponse.cookies.getAll().forEach((cookie) => {
-          response.cookies.set(cookie);
-        });
+        supabaseResponse.cookies.getAll().forEach( ({ name, value, ...options }) => {
+          response.cookies.set(name, value, options);
+        },);
+
+        // Preserve relevant response headers.
+        for (const header of ['cache-control', 'expires', 'pragma']) {
+          const value = supabaseResponse.headers.get(header);
+      
+          if (value) {
+            response.headers.set(header, value);
+          }
+        }
 
         return response;
     }

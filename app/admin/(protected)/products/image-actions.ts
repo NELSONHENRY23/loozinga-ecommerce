@@ -95,24 +95,24 @@ export async function saveProductImages(
   try {
     await db.transaction(async (tx) => {
       // Check existing images at the selected positions.
-  const currentImages = await tx
-  .select({
-    variantId: productImages.variantId,
-  })
-  .from(productImages)
-  .where(
-    and(
-      eq(productImages.productId, productId),
-      inArray(productImages.position, positions),
-    ),
-  );
+    const currentImages = await tx
+    .select({
+      variantId: productImages.variantId,
+    })
+    .from(productImages)
+    .where(
+      and(
+        eq(productImages.productId, productId),
+        inArray(productImages.position, positions),
+      ),
+    );
 
   // Prevent the old uploader from replacing variant images.
-if (currentImages.some((image) => image.variantId !== null)) {
-  throw new Error(
-    'An image is already assigned to a color. Use variant image management.',
-  );
-}
+  if (currentImages.some((image) => image.variantId !== null)) {
+    throw new Error(
+      'An image is already assigned to a color. Use variant image management.',
+    );
+  }
       /* Remove only image positions that are being replaced. */
       await tx.delete(productImages)
                .where(
@@ -603,4 +603,3 @@ export async function deleteVariantImage(
     };
   }
 }
-

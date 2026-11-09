@@ -209,6 +209,7 @@ export default function ProductImagesForm({
                 src={selectedVariant.image.secureUrl}
                 alt={`${product.name} - ${selectedVariant.color}`}
                 fill
+                loading="eager"
                 sizes="384px"
                 className="object-cover"
               />

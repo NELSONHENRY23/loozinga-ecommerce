@@ -17,7 +17,6 @@ type CloudinaryUploadResponse = {
 
 export type UploadedCloudinaryImage = {
   secureUrl: string;
-
   publicId: string;
 };
 
@@ -102,8 +101,8 @@ export async function uploadCloudinaryImage(
 
       formData.append('file', file);
       formData.append('api_key', apiKey);
-      formData.append('timestamp', String(timestamp),);
-      formData.append('signature', signature,);
+      formData.append('timestamp', String(timestamp));
+      formData.append('signature', signature);
       formData.append('folder', folder);
       formData.append('upload_preset', uploadPreset);
 

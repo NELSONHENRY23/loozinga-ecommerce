@@ -49,7 +49,7 @@ export async function addProductVariant(
       .select({ id: products.id })
       .from(products)
       .where(eq(products.id, productId))
-      .limit(1);
+      .limit(1)
 
     if (!product) {
       return {

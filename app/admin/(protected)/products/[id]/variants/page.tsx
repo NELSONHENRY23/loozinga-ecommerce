@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { asc, eq } from 'drizzle-orm';
-
 import { db } from '@/app/db';
 import {
   products,
@@ -17,7 +16,7 @@ type Props = {
 }
 
 export default async function ProductVariantsPage({params,}:Props) {
-  // Require an administrator  
+  // Require an administrator
   await requireAdmin();
 
     const { id } = await params;
@@ -25,50 +24,56 @@ export default async function ProductVariantsPage({params,}:Props) {
     // Validate the product ID
     const uuidPattern =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
- 
+
     if (!uuidPattern.test(id)) {
         notFound();
       }
 
+
       // Fetch the product and confirm it exists
-      const [product] = await db
-    .select({
-      id: products.id,
-      name: products.name,
-    })
-    .from(products)
-    .where(eq(products.id, id))
-    .limit(1);
+      // Fetch its variants and configured sizes concurrently
+      const [[product], variants] = await Promise.all(
+        [
+
+          db.select({
+          id: products.id,
+          name: products.name,
+        })
+        .from(products)
+        .where(eq(products.id, id))
+        .limit(1),
+
+        db.select({
+          id: productVariants.id,
+          color: productVariants.color,
+          size: productVariantSizes.size,
+      })
+      .from(productVariants)
+      .leftJoin(
+        productVariantSizes,
+        eq(productVariantSizes.variantId, productVariants.id),
+      )
+      .where(eq(productVariants.productId, id))
+      .orderBy(
+        asc(productVariants.createdAt),
+        asc(productVariantSizes.size),
+      )
+        ]
+      )
+
 
     if(!product){
         notFound();
     }
 
-    // fetch its variants and configured sizes
-    const variants = await db.select({
-        id: productVariants.id, 
-        color: productVariants.color,
-        size: productVariantSizes.size,
-    })
-    .from(productVariants)
-    .leftJoin(
-      productVariantSizes,
-      eq(productVariantSizes.variantId, productVariants.id),
-    )
-    .where(eq(productVariants.productId, id))
-    .orderBy(
-      asc(productVariants.createdAt),
-      asc(productVariantSizes.size),
-    );
-
-    // Group the joined rows into the nested structure. 
+    // Group the joined rows into the nested structure.
     const variantWithSizes = Array.from(
       // Group repeated variant Ids and collect sizes.
       variants.reduce((grouped, row) => {
         const existing = grouped.get(row.id);
 
         if(existing){
-    
+
           if(row.size !== null){
             existing.sizes.push(row.size);
           }
@@ -90,7 +95,6 @@ export default async function ProductVariantsPage({params,}:Props) {
       ([, variant]) => variant,
     );
 
-    
     return(
         <div className="p-5">
              <Link

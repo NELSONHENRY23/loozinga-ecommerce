@@ -26,72 +26,66 @@ const formatMoney = (amount: number) => `$${amount.toFixed(2)}`;
 export default async function AdminDashboardPage() {
   await requireAdmin();
 
-  // These queries are valid; a rejected database query must not be mistaken for a JSX error.
-  const [
-    orderStatsResult,
-    productCountResult,
-    customerCountResult,
-    recentOrders,
-  ] = await Promise.all([
-    db
-      .select({
-        totalOrders: count(),
-        gross: sql<string>`
-          coalesce(
-            sum(${orders.total}) filter (
-              where ${orders.orderStatus} <> 'Cancelled'
-            ),
-            0
-          )
-        `,
-        paid: sql<string>`
-          coalesce(
-            sum(${orders.total}) filter (
-              where ${orders.orderStatus} <> 'Cancelled'
-                and ${orders.paymentStatus} = 'Paid'
-            ),
-            0
-          )
-        `,
-        pending: sql<string>`
-          coalesce(
-            sum(${orders.total}) filter (
-              where ${orders.orderStatus} <> 'Cancelled'
-                and ${orders.paymentStatus} = 'Pending'
-            ),
-            0
-          )
-        `,
-      })
-      .from(orders),
-    db.select({ total: count() }).from(products),
-    db
-      .select({ total: count() })
-      .from(profiles)
-      .where(eq(profiles.role, 'Customer')),
-    db
-      .select({
-        id: orders.id,
-        orderNumber: orders.orderNumber,
-        customerName: orders.customerName,
-        city: orders.city,
-        country: orders.country,
-        total: orders.total,
-        paymentStatus: orders.paymentStatus,
-        orderStatus: orders.orderStatus,
-        createdAt: orders.createdAt,
-      })
-      .from(orders)
-      .orderBy(desc(orders.createdAt), desc(orders.id))
-      .limit(5),
-  ]);
+  const orderStatsResult = await db
+    .select({
+      totalOrders: count(),
+      gross: sql<string>`
+        coalesce(
+          sum(${orders.total}) filter (
+            where ${orders.orderStatus} <> 'Cancelled'
+          ),
+          0
+        )
+      `,
+      paid: sql<string>`
+        coalesce(
+          sum(${orders.total}) filter (
+            where ${orders.orderStatus} <> 'Cancelled'
+              and ${orders.paymentStatus} = 'Paid'
+          ),
+          0
+        )
+      `,
+      pending: sql<string>`
+        coalesce(
+          sum(${orders.total}) filter (
+            where ${orders.orderStatus} <> 'Cancelled'
+              and ${orders.paymentStatus} = 'Pending'
+          ),
+          0
+        )
+      `,
+    })
+    .from(orders);
+  const [productCountResult] = await db
+    .select({ total: count() })
+    .from(products);
+  const [customerCountResult] = await db
+    .select({ total: count() })
+    .from(profiles)
+    .where(eq(profiles.role, 'Customer'));
+  const recentOrders = await db
+    .select({
+      id: orders.id,
+      orderNumber: orders.orderNumber,
+      customerName: orders.customerName,
+      city: orders.city,
+      country: orders.country,
+      total: orders.total,
+      paymentStatus: orders.paymentStatus,
+      orderStatus: orders.orderStatus,
+      createdAt: orders.createdAt,
+    })
+    .from(orders)
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    .limit(5);
   const orderStats = orderStatsResult[0];
   const totalOrders = orderStats?.totalOrders ?? 0;
   const grossOrderValue = Number(orderStats?.gross ?? 0);
   const paidRevenue = Number(orderStats?.paid ?? 0);
   const outstandingPayments = Number(orderStats?.pending ?? 0);
-  const totalProducts = productCountResult[0]?.total ?? 0;
-  const totalCustomers = customerCountResult[0]?.total ?? 0;
+  const totalProducts = productCountResult?.total ?? 0;
+  const totalCustomers = customerCountResult?.total ?? 0;
 
   const stats = [
     {

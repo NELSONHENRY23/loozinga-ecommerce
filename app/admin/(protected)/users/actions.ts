@@ -5,8 +5,8 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/app/db";
 import { profiles } from "@/app/db/schema";
-import { createClient } from "@/utils/superbase/server";
 import { createAdminClient } from "@/utils/superbase/admin";
+import { requireAdmin } from "@/utils/superbase/require-admin";
 
 type CustomerActionResult = {
     success: boolean;
@@ -14,29 +14,30 @@ type CustomerActionResult = {
 }
 
 export async function setCustomerBlocked(targetUserId:string, shouldBlock: boolean): Promise<CustomerActionResult> {
-    // Verify the signed-in user
-    const supabase = await createClient();
+    // Verify the signed-in administrator
+    let admin: Awaited<ReturnType<typeof requireAdmin>>;
 
-    const {data: {user}, error: authError,} = await supabase.auth.getUser();
+    try {
+        admin = await requireAdmin();
+    } catch (error) {
+        if(error instanceof Error){
+            if(error.message === 'Unauthorized'){
+                return{
+                    success: false,
+                    message: 'Your session has expired. Please sign in again.',
+                }
+            }
 
-    if(authError || !user){
-    return {
-        success: false,
-        message: "Please sign in before performing this action.",
-    };
-    }
-
-    // verify that the signed-in user is an administrator
-    const [adminProfile] = await db.select({role: profiles.role})
-                            .from(profiles)
-                            .where(eq(profiles.id, user.id))
-                            .limit(1);
-
-    if(adminProfile?.role !== 'Administrator'){
-        return{
-            success: false,
-            message: 'You are not authorized to manage customers.',
+            if(error.message === 'Forbidden'){
+                return{
+                    success: false,
+                    message: 'You do not have permission to manage customers.',
+                }
+            }
         }
+
+        // Do not hide unexpected database or authentication failures.
+        throw error;
     }
 
     // Verify the target user ID
@@ -52,7 +53,7 @@ export async function setCustomerBlocked(targetUserId:string, shouldBlock: boole
     }
 
     // Prevent blocking yourself
-    if(targetUserId === user.id){
+    if(targetUserId === admin.id){
         return{
             success: false,
             message: 'You cannot block your own account.'

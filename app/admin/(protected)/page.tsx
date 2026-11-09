@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 
 import {
@@ -10,107 +9,66 @@ import {
   TrendingUp,
   BadgeCheck,
   Clock3,
-  FlaskConical,
 } from 'lucide-react';
 
-import {
-  and,
-  count,
-  desc,
-  eq,
-  notIlike,
-  ne,
-  sql,
-  ilike,
-} from 'drizzle-orm';
+import { count, desc, eq, sql } from 'drizzle-orm';
 
 import { db } from '@/app/db';
-import {
-  orders,
-  products,
-  profiles,
-} from '@/app/db/schema';
+import { orders, products, profiles } from '@/app/db/schema';
 
 import StatCard from '@/components/admin/StatCard';
 import { requireAdmin } from '@/utils/superbase/require-admin';
 
 export const dynamic = 'force-dynamic';
 
-const formatMoney = (amount: number) =>
-  `$${amount.toFixed(2)}`;
+const formatMoney = (amount: number) => `$${amount.toFixed(2)}`;
 
 export default async function AdminDashboardPage() {
   await requireAdmin();
 
-  // Business orders: exclude tests and cancellations.
-  const businessFilter = and(
-    ne(orders.orderStatus, 'Cancelled'),
-    notIlike(orders.orderNumber, 'TEST-%'),
-  );
-
+  // These queries are valid; a rejected database query must not be mistaken for a JSX error.
   const [
-    orderCountResult,
+    orderStatsResult,
     productCountResult,
     customerCountResult,
-    financialResult,
-    testResult,
     recentOrders,
   ] = await Promise.all([
     db
-      .select({ total: count() })
+      .select({
+        totalOrders: count(),
+        gross: sql<string>`
+          coalesce(
+            sum(${orders.total}) filter (
+              where ${orders.orderStatus} <> 'Cancelled'
+            ),
+            0
+          )
+        `,
+        paid: sql<string>`
+          coalesce(
+            sum(${orders.total}) filter (
+              where ${orders.orderStatus} <> 'Cancelled'
+                and ${orders.paymentStatus} = 'Paid'
+            ),
+            0
+          )
+        `,
+        pending: sql<string>`
+          coalesce(
+            sum(${orders.total}) filter (
+              where ${orders.orderStatus} <> 'Cancelled'
+                and ${orders.paymentStatus} = 'Pending'
+            ),
+            0
+          )
+        `,
+      })
       .from(orders),
-
-    db
-      .select({ total: count() })
-      .from(products),
-
+    db.select({ total: count() }).from(products),
     db
       .select({ total: count() })
       .from(profiles)
       .where(eq(profiles.role, 'Customer')),
-
-    // Non-test financial statistics
-    db
-      .select({
-        gross: sql<string>`
-          coalesce(sum(${orders.total}), 0)
-        `,
-
-        paid: sql<string>`
-          coalesce(
-            sum(${orders.total})
-            filter (
-              where ${orders.paymentStatus} = 'Paid'
-            ),
-            0
-          )
-        `,
-
-        pending: sql<string>`
-          coalesce(
-            sum(${orders.total})
-            filter (
-              where ${orders.paymentStatus} = 'Pending'
-            ),
-            0
-          )
-        `,
-      })
-      .from(orders)
-      .where(businessFilter),
-
-    // Test orders stay separate from sales
-    db
-      .select({
-        total: sql<string>`
-          coalesce(sum(${orders.total}), 0)
-        `,
-        quantity: count(),
-      })
-      .from(orders)
-      .where(ilike(orders.orderNumber, 'TEST-%')),
-
-    // Latest five orders, including test records
     db
       .select({
         id: orders.id,
@@ -124,56 +82,28 @@ export default async function AdminDashboardPage() {
         createdAt: orders.createdAt,
       })
       .from(orders)
-      .orderBy(
-        desc(orders.createdAt),
-        desc(orders.id),
-      )
+      .orderBy(desc(orders.createdAt), desc(orders.id))
       .limit(5),
   ]);
-
-  const totalOrders = Number(
-    orderCountResult[0]?.total ?? 0,
-  );
-
-  const totalProducts = Number(
-    productCountResult[0]?.total ?? 0,
-  );
-
-  const totalCustomers = Number(
-    customerCountResult[0]?.total ?? 0,
-  );
-
-  const grossOrderValue = Number(
-    financialResult[0]?.gross ?? 0,
-  );
-
-  const paidRevenue = Number(
-    financialResult[0]?.paid ?? 0,
-  );
-
-  const outstandingPayments = Number(
-    financialResult[0]?.pending ?? 0,
-  );
-
-  const testOrderValue = Number(
-    testResult[0]?.total ?? 0,
-  );
-
-  const testOrderCount = Number(
-    testResult[0]?.quantity ?? 0,
-  );
+  const orderStats = orderStatsResult[0];
+  const totalOrders = orderStats?.totalOrders ?? 0;
+  const grossOrderValue = Number(orderStats?.gross ?? 0);
+  const paidRevenue = Number(orderStats?.paid ?? 0);
+  const outstandingPayments = Number(orderStats?.pending ?? 0);
+  const totalProducts = productCountResult[0]?.total ?? 0;
+  const totalCustomers = customerCountResult[0]?.total ?? 0;
 
   const stats = [
     {
-      title: 'Total Orders',
+      title: 'Orders',
       value: totalOrders,
-      color: 'bg-[#57889c]',
+      color: 'bg-[#2784c7]',
       icon: ShoppingCart,
     },
     {
       title: 'Paid Revenue',
       value: formatMoney(paidRevenue),
-      color: 'bg-[#d1b993]',
+      color: 'bg-[#f0a43c]',
       icon: Wallet,
     },
     {
@@ -194,40 +124,30 @@ export default async function AdminDashboardPage() {
     {
       title: 'Gross Order Value',
       value: formatMoney(grossOrderValue),
-      description: 'Non-test, non-cancelled orders',
+      description: 'Non-cancelled orders',
       icon: TrendingUp,
       iconStyle: 'bg-blue-50 text-blue-600',
     },
     {
       title: 'Paid Revenue',
       value: formatMoney(paidRevenue),
-      description: 'Paid, non-test, non-cancelled orders',
+      description: 'Paid, non-cancelled orders',
       icon: BadgeCheck,
       iconStyle: 'bg-green-50 text-green-600',
     },
     {
       title: 'Outstanding Payments',
       value: formatMoney(outstandingPayments),
-      description: 'Pending, non-test, non-cancelled orders',
+      description: 'Pending, non-cancelled orders',
       icon: Clock3,
       iconStyle: 'bg-amber-50 text-amber-600',
     },
-    {
-      title: 'Test Transactions',
-      value: formatMoney(testOrderValue),
-      description: `${testOrderCount} test orders excluded from sales`,
-      icon: FlaskConical,
-      iconStyle: 'bg-purple-50 text-purple-600',
-    },
   ];
-  
 
-return (
+  return (
     <div className="p-4">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-700">
-          Dashboard
-        </h1>
+        <h1 className="text-2xl font-semibold text-gray-700">Dashboard</h1>
 
         <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
           <span>Home</span>
@@ -249,44 +169,44 @@ return (
         </div>
 
         {/* Sales Overview */}
-<section className="mt-7">
-  <h2 className="mb-4 text-lg font-semibold text-gray-700">
-    Sales Overview
-  </h2>
+        <section className="mt-7">
+          <h2 className="mb-4 text-lg font-semibold text-gray-700">
+            Sales Overview
+          </h2>
 
-  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-    {financialStats.map((stat) => {
-      const Icon = stat.icon;
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {financialStats.map((stat) => {
+              const Icon = stat.icon;
 
-      return (
-        <div
-          key={stat.title}
-          className="rounded-md border border-gray-100 bg-white p-5 shadow-sm"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-medium text-gray-500">
-              {stat.title}
-            </p>
+              return (
+                <div
+                  key={stat.title}
+                  className="rounded-md border border-gray-100 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium text-gray-500">
+                      {stat.title}
+                    </p>
 
-            <div
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${stat.iconStyle}`}
-            >
-              <Icon size={23} strokeWidth={1.8} />
-            </div>
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${stat.iconStyle}`}
+                    >
+                      <Icon size={23} strokeWidth={1.8} />
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-2xl font-semibold text-gray-700">
+                    {stat.value}
+                  </p>
+
+                  <p className="mt-2 text-xs text-gray-400">
+                    {stat.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
-
-          <p className="mt-3 text-2xl font-semibold text-gray-700">
-            {stat.value}
-          </p>
-
-          <p className="mt-2 text-xs text-gray-400">
-            {stat.description}
-          </p>
-        </div>
-      );
-    })}
-  </div>
-</section>
+        </section>
 
         {/* Recent Orders */}
         <section
@@ -316,9 +236,7 @@ return (
                   <th className="px-5 py-4">Total</th>
                   <th className="px-5 py-4">Payment</th>
                   <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4 text-center">
-                    Action
-                  </th>
+                  <th className="px-5 py-4 text-center">Action</th>
                 </tr>
               </thead>
 
@@ -334,10 +252,6 @@ return (
                   </tr>
                 ) : (
                   recentOrders.map((order) => {
-                    const isTestOrder = order.orderNumber
-                      .toUpperCase()
-                      .startsWith('TEST-');
-
                     return (
                       <tr
                         key={order.id}
@@ -345,12 +259,6 @@ return (
                       >
                         <td className="whitespace-nowrap px-5 py-4 font-medium text-gray-700">
                           {order.orderNumber}
-
-                          {isTestOrder && (
-                            <span className="ml-2 rounded bg-gray-100 px-2 py-1 text-xs text-gray-500">
-                              Test
-                            </span>
-                          )}
                         </td>
 
                         <td className="px-5 py-4">
@@ -364,14 +272,11 @@ return (
                         </td>
 
                         <td className="whitespace-nowrap px-5 py-4 text-gray-500">
-                          {order.createdAt.toLocaleDateString(
-                            'en-US',
-                            {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            },
-                          )}
+                          {order.createdAt.toLocaleDateString('en-US', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
                         </td>
 
                         <td className="px-5 py-4 font-medium text-gray-700">

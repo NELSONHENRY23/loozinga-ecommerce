@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Database connection
+
+Set `DATABASE_URL` to the Supabase Transaction pooler connection string (port `6543`), rather than the Session pooler string. The app reuses one PostgreSQL client per server process and disables prepared statements for pooler compatibility.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

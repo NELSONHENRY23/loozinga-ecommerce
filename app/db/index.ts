@@ -11,6 +11,7 @@ if(!databaseUrl){
 
 const client = postgres(databaseUrl, {
     prepare: false,
+    max: 1,
 })
 
 export const db = drizzle(client);

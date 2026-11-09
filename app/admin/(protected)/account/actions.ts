@@ -98,15 +98,6 @@ export async function updatePassword(formData: FormData) {
 
   const supabase = await createClient();
 
-  const {data: { user }, error: userError, } = await supabase.auth.getUser();
-
-  if(userError || !user){
-    return {
-      success: false,
-      message: 'You must be logged in'
-      }
-  }
-
   const { error }= await supabase.auth.updateUser({password: newPassword,});
 
   if(error){

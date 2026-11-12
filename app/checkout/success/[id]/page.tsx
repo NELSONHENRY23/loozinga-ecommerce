@@ -99,7 +99,7 @@ export default async function OrderSuccessPage({ params }: Props) {
               View Order
             </Link>
             <Link
-              href="/"
+              href="/shop"
               className="mt-8 inline-block rounded-lg bg-gray-900 px-6 py-3 font-semibold text-white hover:bg-gray-700"
             >
               Continue Shopping

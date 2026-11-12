@@ -71,6 +71,13 @@
       "when": 1793712019951,
       "tag": "0009_bouncy_vargas",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794394154309,
+      "tag": "0010_lumpy_penance",
+      "breakpoints": true
     }
   ]
 }

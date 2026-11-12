@@ -21,7 +21,9 @@ export default function ProductGallery({
 }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const selectedImage = images[selectedIndex];
+  const safeIndex = Math.min(selectedIndex, Math.max(images.length - 1, 0));
+
+  const selectedImage = images[safeIndex];
 
   return (
     <div className="min-w-0 space-y-4">
@@ -29,10 +31,10 @@ export default function ProductGallery({
         {selectedImage ? (
           <Image
             src={selectedImage.secureUrl}
-            alt={`${productName} - Image ${selectedIndex + 1}`}
+            alt={`${productName} - Image ${safeIndex + 1}`}
             fill
-            priority
             loading="eager"
+            fetchPriority="high"
             sizes="(max-width: 1024px) 100vw, 50vw"
             className="object-contain"
           />

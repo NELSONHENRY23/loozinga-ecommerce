@@ -64,10 +64,7 @@ export default async function ProductsPage({
       description: products.description,
       price: products.price,
       offer: products.offer,
-      color: products.color,
-
       categoryName: categories.name,
-
       mainImage: productImages.secureUrl,
     })
     .from(products)
@@ -131,8 +128,6 @@ export default async function ProductsPage({
                 <th className="px-5 py-4">Offer</th>
 
                 <th className="px-5 py-4">Category</th>
-
-                <th className="px-5 py-4">Color</th>
 
                 <th className="px-5 py-4">Images</th>
 
@@ -202,8 +197,6 @@ export default async function ProductsPage({
                     <td className="px-5 py-4 text-gray-700">
                       {product.categoryName ?? 'Uncategorized'}
                     </td>
-
-                    <td className="px-5 py-4 text-gray-700">{product.color}</td>
 
                     <td className="px-5 py-4">
                       <Link

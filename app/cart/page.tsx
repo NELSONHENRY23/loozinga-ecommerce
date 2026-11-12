@@ -39,7 +39,7 @@ export default function CartPage(){
             </p>
 
             <Link
-              href="/#products"
+              href="/shop"
               className="mt-6 inline-block rounded-lg bg-gray-900 px-6 py-3 text-white hover:bg-gray-700"
             >
               Continue Shopping
@@ -196,7 +196,7 @@ export default function CartPage(){
               </Link>
 
               <Link
-                href="/#products"
+                href="/shop"
                 className="mt-4 block text-center text-sm font-medium text-gray-700 hover:underline"
               >
                 Continue Shopping

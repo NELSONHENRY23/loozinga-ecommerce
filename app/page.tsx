@@ -1,109 +1,111 @@
-import Link from "next/link";
-import { and, desc, eq } from "drizzle-orm";
+import Link from 'next/link';
+import { and, desc, eq } from 'drizzle-orm';
 
-import { db } from "@/app/db";
-import { categories, productImages, products } from "./db/schema";
+import { db } from '@/app/db';
+import { categories, productImages, products } from './db/schema';
 
-import Navbar from "@/components/storefront/Navbar";
-import ProductCard from "@/components/storefront/ProductCard";
-import Footer from "@/components/storefront/Footer";
+import Navbar from '@/components/storefront/Navbar';
+import ProductCard from '@/components/storefront/ProductCard';
+import Footer from '@/components/storefront/Footer';
+import { getProductColors } from '@/utils/product-colors';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-export default async function HomePage(){
-  const productList = await db.select({
-    id: products.id,
-    name: products.name,
-    price: products.price,
-    offer: products.offer,
-    categoryName: categories.name,
-    mainImage: productImages.secureUrl,
-  })
-  .from(products)
-  .leftJoin(
-    categories,
-    eq(products.categoryId, categories.id),
-  )
-  .leftJoin(
-    productImages,
-    and(
-      eq(productImages.productId, products.id),
-      eq(productImages.position, 0),
+export default async function HomePage() {
+  const productList = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      price: products.price,
+      offer: products.offer,
+      categoryName: categories.name,
+      mainImage: productImages.secureUrl,
+    })
+    .from(products)
+    .leftJoin(categories, eq(products.categoryId, categories.id))
+    .leftJoin(
+      productImages,
+      and(
+        eq(productImages.productId, products.id),
+        eq(productImages.position, 0),
+      ),
     )
-  )
-  .orderBy(desc(products.createdAt))
-  .limit(12);
+    .orderBy(desc(products.createdAt))
+    .limit(12);
 
-  return(
+  const colorsByProduct = await getProductColors(
+    productList.map((product) => product.id),
+  );
+
+  const productsWithColors = productList.map((product) => ({
+    ...product,
+    colors: colorsByProduct.get(product.id) ?? [],
+  }));
+
+  return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <Navbar/>
+      <Navbar />
 
       <main>
         <section className="bg-gray-900 text-center text-white px-5 py-20">
-            <div className="mx-auto max-w-4xl">
-                <p className="mb-4 text-sm font-medium uppercase tracking-widest text-gray-300">
-                  Welcome to Loozinga
-                </p>
+          <div className="mx-auto max-w-4xl">
+            <p className="mb-4 text-sm font-medium uppercase tracking-widest text-gray-300">
+              Welcome to Loozinga
+            </p>
 
-                <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                  Discover Your Next Favorite
-                </h1>
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+              Discover Your Next Favorite
+            </h1>
 
-                <p className="mx-auto mt-5 max-w-xl text-gray-300">
-                  Explore our collection of fashion, accessories, and everyday essentials.
-                </p>
+            <p className="mx-auto mt-5 max-w-xl text-gray-300">
+              Explore our collection of fashion, accessories, and everyday
+              essentials.
+            </p>
 
-                <a 
-                  href="#products"
-                  className="mt-8 inline-block rounded-lg bg-white px-6 py-3 font-semibold text-gray-900 transition hover:bg-gray-200"
-                >
-                  Shop Now
-                </a>
-            </div>
+            <Link
+              href="/shop"
+              className="mt-8 inline-block rounded-lg bg-white px-8 py-3.5 font-semibold text-gray-900 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              Shop Now
+            </Link>
+          </div>
         </section>
 
-        <section
-          id="products"
-          className="mx-auto max-w-7xl px-5 py-14"
-        >
+        <section id="products" className="mx-auto max-w-7xl px-5 py-14">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold">New Arrivals</h2>
+            <div>
+              <h2 className="text-3xl font-bold">New Arrivals</h2>
 
-            <p className="mt-2 text-gray-500">
-              Discover the latest additions to our store.
-            </p>
+              <p className="mt-2 text-gray-500">
+                Discover the latest additions to our store.
+              </p>
+            </div>
+
+            <Link
+              href="/shop"
+              className="text-sm font-semibold text-gray-900 underline underline-offset-4 hover:text-gray-600"
+            >
+              View All Products
+            </Link>
           </div>
 
-          <Link 
-            href="/shop"
-            className="text-sm font-semibold text-gray-900 underline underline-offset-4 hover:text-gray-600"
-          >
-            View All Products
-          </Link>
-        </div>
+          {productList.length === 0 ? (
+            <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center">
+              <h3 className="text-lg font-semibold">No products available</h3>
 
-          {
-            productList.length === 0 ? (
-              <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center">
-                <h3 className="text-lg font-semibold">No products available</h3>
-              
-                <p className="mt-2 text-gray-500">Check soon for new products</p>
-              </div>
-            ): (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {
-                  productList.map((product) => (
-                    <ProductCard key={product.id} product={product}/>
-                  ))
-                }
-              </div>
-            )
-          }
+              <p className="mt-2 text-gray-500">Check soon for new products</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {productsWithColors.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
         </section>
       </main>
 
-<Footer/>
+      <Footer />
     </div>
-  )
+  );
 }

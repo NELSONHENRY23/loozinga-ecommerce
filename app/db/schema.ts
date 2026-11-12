@@ -38,7 +38,6 @@ export const products = pgTable("products", {
     description: text("description").notNull(),
     price: numeric("price",{precision: 10, scale: 2, mode: "number",}).notNull(),
     offer: integer("offer").default(0).notNull(),
-    color: varchar("color",{length: 100,}).notNull(),
     categoryId: integer("category_id").notNull().references(()=> categories.id, {onDelete: "restrict",}),
     createdAt: timestamp("created_at", {withTimezone: true,}).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", {withTimezone: true,}).defaultNow().notNull(),

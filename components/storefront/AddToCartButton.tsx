@@ -15,13 +15,13 @@ type Props = {
     offer: number;
     image: string | null;
   };
+  requiresSize: boolean;
 };
 
-export default function AddToCartButton({ product }: Props) {
-  const { items, addItem } = useCart();
+export default function AddToCartButton({ product, requiresSize }: Props) {
+  const { items, addItem, loaded } = useCart();
 
-  const requiresSize = product.variantId !== null;
-  const canAdd = !requiresSize || product.size !== null;
+  const canAdd = product.variantId !== null && (!requiresSize || product.size !== null);
 
   // Check whether this exact color variant is already in the cart.
   const added = items.some(
@@ -33,7 +33,7 @@ export default function AddToCartButton({ product }: Props) {
   );
 
   function handleAdd() {
-    if(!canAdd) return;
+    if(!loaded ||!canAdd) return;
     addItem(product);
   }
 
@@ -41,10 +41,14 @@ export default function AddToCartButton({ product }: Props) {
     <button
       type="button"
       onClick={handleAdd}
-      disabled={!canAdd}
+      disabled={!loaded ||!canAdd}
       className="flex w-full items-center justify-center gap-3 rounded-lg bg-gray-900 px-6 py-4 font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      {added ? (
+      {
+      !loaded ? (
+        "Loading Cart..."
+      ):
+      added ? (
         <>
           <Check size={20} />
           Added — Add Another

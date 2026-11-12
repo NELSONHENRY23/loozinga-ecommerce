@@ -26,6 +26,7 @@ type NewCartItem = Omit<CartItem, "quantity">;
 
 type CartContextType = {
   items: CartItem[];
+  loaded: boolean;
   addItem: (product: NewCartItem) => void;
   removeItem: (id: string, color: string, variantId: string | null, size: string | null) => void;
   updateQuantity: (
@@ -153,9 +154,11 @@ export function CartProvider({
   }, [items, loaded]);
 
   function addItem(product: NewCartItem) {
-    if (!product.color.trim()) return;
-    if(product.variantId && !product.size) return;
-
+    // Every purchasable product must have a color variant
+    if(!product.variantId || !product.color.trim()) return;
+    
+    // Size requirements are validated against the database
+    // during checkout
     setItems((previous) => {
       const productKey = getCartkey(
         product.id,
@@ -242,17 +245,20 @@ export function CartProvider({
     0,
   );
 
-  const total = items.reduce((sum, item) => {
-    const discountedPrice =
-      item.price * (1 - item.offer / 100);
+  const totalCents = items.reduce((sum, item) => {
+    const unitPriceCents =
+      Math.round(item.price * (1 - item.offer / 100) * 100);
 
-    return sum + discountedPrice * item.quantity;
+    return sum + unitPriceCents * item.quantity;
   }, 0);
+
+  const total = totalCents / 100;
 
   return (
     <CartContext.Provider
       value={{
         items,
+        loaded,
         addItem,
         removeItem,
         updateQuantity,

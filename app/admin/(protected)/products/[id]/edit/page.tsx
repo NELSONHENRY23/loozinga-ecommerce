@@ -30,7 +30,6 @@ export default async function EditProductPage({
       description: products.description,
       price: products.price,
       offer: products.offer,
-      color: products.color,
       categoryId: products.categoryId,
     })
     .from(products)

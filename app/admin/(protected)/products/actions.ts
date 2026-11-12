@@ -31,23 +31,14 @@ const productSchema = z.object({
     .min(0)
     .max(100),
 
-  color: z
-    .string()
-    .trim()
-    .min(1, 'Color is required'),
-
   categoryId: z
     .number()
     .int()
     .positive(),
 });
-const updateProductSchema = productSchema.omit({
-  color: true,
-});
+const updateProductSchema = productSchema;
 
-const createProductSchema = productSchema.omit({
-  color: true,
-});
+const createProductSchema = productSchema;
 
 export type UpdateProductInput = z.infer<
   typeof updateProductSchema
@@ -105,7 +96,6 @@ export async function createProduct(
         description: parsed.data.description,
         price: parsed.data.price,
         offer: parsed.data.offer,
-        color: '',
         categoryId: parsed.data.categoryId,
       })
       .returning({

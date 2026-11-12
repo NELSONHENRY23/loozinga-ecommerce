@@ -289,7 +289,7 @@ export default function ProductVariantsForm({ productId, variants }: Props) {
                         sizes.length >= 30 ||
                         !(newSizeInputs[variant.id] ?? '').trim()
                       }
-                      className="inline-flex flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Plus size={16} />
                       Add Size

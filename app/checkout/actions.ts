@@ -38,6 +38,13 @@ const checkoutSchema = z.object({
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 
+class CheckoutValidationError extends Error{
+  constructor(message: string){
+    super(message);
+    this.name = "CheckoutValidationError";
+  }
+}
+
 export async function placeOrder(input: CheckoutInput) {
   // Validate incoming form data
   const parsed = checkoutSchema.safeParse(input);
@@ -216,26 +223,26 @@ export async function placeOrder(input: CheckoutInput) {
       const product = productMap.get(item.id)!;
 
       if (!product) {
-        throw new Error('Product not found.');
+        throw new CheckoutValidationError('This product is no longer available.');
       }
 
       let variantId: string | null = null;
       let color: string | null = null;
 
       if (!item.variantId) {
-        throw new Error('Please select a product color.');
+        throw new CheckoutValidationError('Please select a product color.');
       }
 
       const variant = variantMap.get(item.variantId);
 
       // Ensure the variant exists and belongs to this product.
       if (!variant || variant.productId !== product.id) {
-        throw new Error('Invalid product variant.');
+        throw new CheckoutValidationError('The selected product option is no longer available.');
       }
 
       // Every purchasable variant must have a color.
       if (!variant.color.trim()) {
-        throw new Error('This product has no valid color.');
+        throw new CheckoutValidationError('The selected product color is unavailable.');
       }
 
       // Check whether the selected variant has sizes.
@@ -246,11 +253,11 @@ export async function placeOrder(input: CheckoutInput) {
       if (variantHasSizes) {
         // Size is mandatory when the variant has available sizes.
         if (!item.size || !sizeKeys.has(`${variant.id}:${item.size}`)) {
-          throw new Error('Please select a valid available size.');
+          throw new CheckoutValidationError('Please select a valid available size.');
         }
       } else if (item.size !== null) {
         // Products without sizes must not submit a size.
-        throw new Error('This product does not require a size.');
+        throw new CheckoutValidationError('This product does not require a size.');
       }
 
       variantId = variant.id;
@@ -350,7 +357,10 @@ export async function placeOrder(input: CheckoutInput) {
 
     return {
       success: false,
-      message: 'Could not placed order. Please try again.',
+      message: 
+        error instanceof CheckoutValidationError
+        ? error.message
+        : 'Could not placed order. Please try again.',
     };
   }
 }

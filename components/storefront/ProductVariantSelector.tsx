@@ -59,10 +59,14 @@ export default function ProductVariantSelector({
   );
 
   // Products without variants continue using their existing images.
+  const fallbackImage = legacyImages[0] ?? variants.find((variant) => variant.image)?.image;
+
   const images = selectedVariant
     ? selectedVariant.image
       ? [selectedVariant.image]
-      : []
+      : fallbackImage
+        ?[fallbackImage]
+        :[]
     : legacyImages;
 
   const selectedColor = selectedVariant?.color ?? '';
@@ -147,7 +151,7 @@ export default function ProductVariantSelector({
 
           {!selectedVariant?.image && (
             <p className="mt-2 text-sm text-amber-700">
-              An image has not been added for this color yet.
+              No image si available for this color yet. The gallery may show another color.
             </p>
           )}
         </div>
@@ -199,7 +203,7 @@ export default function ProductVariantSelector({
           size: selectedSize || null,
           price: product.price,
           offer: product.offer,
-          image: images[0]?.secureUrl ?? null,
+          image: selectedVariant?.image?.secureUrl ?? null,
         }}
       />
       </div>

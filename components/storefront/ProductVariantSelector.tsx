@@ -89,7 +89,7 @@ export default function ProductVariantSelector({
       </div>
 
       {/* Right: Product options */}
-      <div className="min-w-0 space-x-7 lg:pt-4">
+      <div className="min-w-0 space-y-7 lg:pt-4">
         
       {variants.length > 0 && (
         <>
@@ -151,7 +151,7 @@ export default function ProductVariantSelector({
 
           {!selectedVariant?.image && (
             <p className="mt-2 text-sm text-amber-700">
-              No image si available for this color yet. The gallery may show another color.
+              No image is available for this color yet. The gallery may show another color.
             </p>
           )}
         </div>

@@ -1,8 +1,8 @@
 'use server';
 
-import { inArray, eq } from 'drizzle-orm';
+import { and, inArray, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { z } from 'zod';
+import {  z } from 'zod';
 
 import { db } from '@/app/db';
 import {
@@ -17,6 +17,7 @@ import { createClient } from '@/utils/superbase/server';
 import { createAdminClient } from '@/utils/superbase/admin';
 
 const checkoutSchema = z.object({
+  checkoutRequestId: z.uuid(),
   customerName: z.string().trim().min(2).max(150),
   phone: z.string().trim().min(5).max(50),
   street: z.string().trim().min(5).max(250),
@@ -143,6 +144,29 @@ export async function placeOrder(input: CheckoutInput) {
   }
 
   const data = parsed.data;
+
+  const [existingOrder] = await db
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+      })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.checkoutRequestId, data.checkoutRequestId),
+          eq(orders.userId, user.id),
+        )
+      )
+      .limit(1);
+
+      if(existingOrder){
+        return{
+          success: true,
+          message: 'Order already placed successfully.',
+          orderId: existingOrder.id,
+          orderNumber: existingOrder.orderNumber,
+        }
+      }
 
   // Prevent duplcate lines for the same product and variant
   const ItemKeys = data.items.map(
@@ -315,9 +339,10 @@ export async function placeOrder(input: CheckoutInput) {
     const orderId = randomUUID();
     const orderNumber = `LZ-${randomUUID().slice(0, 12).toUpperCase()}`;
 
-    await db.transaction(async (tx) => {
-      await tx.insert(orders).values({
+    const created = await db.transaction(async (tx) => {
+      const insertedOrders = await tx.insert(orders).values({
         id: orderId,
+        checkoutRequestId: data.checkoutRequestId,
         orderNumber,
         userId: user.id,
         customerName: data.customerName,
@@ -330,7 +355,15 @@ export async function placeOrder(input: CheckoutInput) {
         paymentMethod: 'COD',
         paymentStatus: 'Pending',
         orderStatus: 'Processing',
-      });
+      })
+      .onConflictDoNothing({
+        target: orders.checkoutRequestId,
+      })
+      .returning({id: orders.id});
+
+      if (insertedOrders.length === 0){
+        return false;
+      }
 
       await tx.insert(orderItems).values(
         calculatedItems.map((item) => ({
@@ -344,7 +377,31 @@ export async function placeOrder(input: CheckoutInput) {
           price: item.price,
         })),
       );
+
+    return true;
     });
+
+    if(!created){
+      const [saveOrder] = await db.select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        userId: orders.userId,
+      })
+      .from(orders)
+      .where(eq(orders.checkoutRequestId, data.checkoutRequestId))
+      .limit(1);
+
+      if(!saveOrder || saveOrder.userId !== user.id){
+        throw new Error('Checkout request conflict.');
+      }
+
+      return{
+        success: true,
+        message: 'Order already placed successfully.',
+        orderId: saveOrder.id,
+        orderNumber: saveOrder.orderNumber,
+      }
+    }
 
     return {
       success: true,
@@ -357,7 +414,7 @@ export async function placeOrder(input: CheckoutInput) {
 
     return {
       success: false,
-      message: 
+      message:
         error instanceof CheckoutValidationError
         ? error.message
         : 'Could not placed order. Please try again.',

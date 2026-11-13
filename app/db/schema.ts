@@ -124,6 +124,7 @@ export const orders = pgTable('orders',{
     id: uuid('id').defaultRandom().primaryKey(),
     userId: uuid('user_id'),
     orderNumber: text('order_number').notNull().unique(),
+    checkoutRequestId: uuid('checkout_request_id').unique(),
     customerName: text('customer_name').notNull(),
     email: text('email').notNull(),
     phone: text('phone').notNull(),

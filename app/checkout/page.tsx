@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef,useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -10,6 +10,9 @@ import { placeOrder } from './actions';
 
 export default function CheckoutPage() {
   const router = useRouter();
+const checkoutRequestId = useRef<string | null>(null);
+const checkoutPayloadKey = useRef<string | null>(null);
+
   const { items, total, clearCart } = useCart();
 
   const [submitting, setSubmitting] = useState(false);
@@ -22,22 +25,34 @@ export default function CheckoutPage() {
 
     const form = new FormData(event.currentTarget);
 
+    const payload = {
+      customerName: String(form.get('customerName') ?? ''),
+      phone: String(form.get('phone') ?? ''),
+      street: String(form.get('street') ?? ''),
+      city: String(form.get('city') ?? ''),
+      country: String(form.get('country') ?? ''),
+      items: items.map((item) => ({
+        id: item.id,
+        variantId: item.variantId,
+        size: item.size,
+        quantity: item.quantity,
+      })),
+    }
+
+    const payloadKey = JSON.stringify(payload);
+
+    if(checkoutPayloadKey.current !== payloadKey){
+      checkoutRequestId.current = crypto.randomUUID();
+      checkoutPayloadKey.current = payloadKey;
+    }
+
     setSubmitting(true);
     setError('');
 
     try {
       const result = await placeOrder({
-        customerName: String(form.get('customerName') ?? ''),
-        phone: String(form.get('phone') ?? ''),
-        street: String(form.get('street') ?? ''),
-        city: String(form.get('city') ?? ''),
-        country: String(form.get('country') ?? ''),
-        items: items.map((item) => ({
-          id: item.id,
-          variantId: item.variantId,
-          size: item.size,
-          quantity: item.quantity,
-        })),
+        checkoutRequestId: checkoutRequestId.current!,
+        ...payload,
       });
 
       if (!result.success || !result.orderId) {
